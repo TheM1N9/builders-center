@@ -55,11 +55,8 @@ export default function ApplicationsPage() {
         .select(
           `
           *,
-          likes:likes(count),
-          creator:profiles!creator_id(
-            user_id,
-            role
-          )
+          likes(count),
+          creator:profiles!creator_id(user_id, role)
         `
         )
         .eq("status", "approved")
@@ -69,14 +66,11 @@ export default function ApplicationsPage() {
 
       let userLikes: string[] = [];
       if (user) {
-        const { data: likes, error: likesError } = await supabase
+        const { data: likes } = await supabase
           .from("likes")
           .select("application_id")
           .eq("user_id", user.id);
-
-        if (!likesError && likes) {
-          userLikes = likes.map((like) => like.application_id);
-        }
+        userLikes = (likes || []).map((like) => like.application_id);
       }
 
       const formattedApps: ApplicationWithProfile[] = (apps || []).map(
@@ -175,7 +169,7 @@ export default function ApplicationsPage() {
             ) && (
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Featured Apps</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                   {filteredApplications
                     .filter((app) => app.creator?.role === "admin")
                     .map((app) => (
@@ -274,7 +268,7 @@ export default function ApplicationsPage() {
             ) && (
               <div>
                 <h2 className="text-2xl font-semibold mb-4">Community Apps</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
                   {filteredApplications
                     .filter((app) => app.creator?.role !== "admin")
                     .map((app) => (

@@ -29,6 +29,8 @@ type ApplicationStatus = "pending" | "approved" | "rejected";
 type AdminApplication = Application & {
   likes: number;
   creator_user_id?: string;
+  review_requested_at?: string | null;
+  reviewed_at?: string;
 };
 
 export default function AdminPage() {
@@ -143,26 +145,38 @@ export default function AdminPage() {
     }
   };
 
-  const updateApplicationStatus = async (id: string, status: string) => {
+  const handleStatusChange = async (
+    applicationId: string,
+    newStatus: ApplicationStatus
+  ) => {
     try {
+      const updateData = {
+        status: newStatus,
+        reviewed_at: new Date().toISOString(),
+        review_requested_at: null,
+      } as const;
+
       const { error } = await supabase
         .from("applications")
-        .update({ status })
-        .eq("id", id);
+        .update(updateData)
+        .eq("id", applicationId);
 
       if (error) throw error;
 
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicationId ? { ...app, ...updateData } : app
+        )
+      );
+
       toast({
         title: "Success",
-        description: `Application ${status}`,
+        description: `Application ${newStatus} successfully`,
       });
-
-      fetchApplications();
-    } catch (error) {
-      console.error("Error updating application:", error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update application status",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -299,7 +313,7 @@ export default function AdminPage() {
                               className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
                               onClick={(e) => {
                                 e.preventDefault();
-                                updateApplicationStatus(app.id, "approved");
+                                handleStatusChange(app.id, "approved");
                               }}
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -310,13 +324,26 @@ export default function AdminPage() {
                               className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
                               onClick={(e) => {
                                 e.preventDefault();
-                                updateApplicationStatus(app.id, "rejected");
+                                handleStatusChange(app.id, "rejected");
                               }}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
                           </>
                         )}
+                        {app.status === "rejected" &&
+                          app.review_requested_at && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleStatusChange(app.id, "pending");
+                              }}
+                            >
+                              Review Again
+                            </Button>
+                          )}
                       </div>
                     </div>
                   </div>

@@ -15,6 +15,8 @@ import {
   Mail,
   User,
   Check,
+  RefreshCw,
+  Heart,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -24,6 +26,17 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Profile = {
   user_id: string;
@@ -60,6 +73,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedUserId, setEditedUserId] = useState("");
   const [editedPublicEmail, setEditedPublicEmail] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -221,31 +235,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this application?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("applications")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setMyApplications(myApplications.filter((app) => app.id !== id));
-      toast({
-        title: "Success",
-        description: "Application deleted successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   if (!user) {
     return null;
   }
@@ -371,7 +360,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Applications Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {(activeTab === "my"
             ? myApplications
             : activeTab === "liked"
@@ -429,8 +418,9 @@ export default function ProfilePage() {
                     </p>
 
                     <div className="flex justify-between items-center mt-auto">
-                      <div className="text-sm text-muted-foreground">
-                        {app.likes} likes
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Heart className="h-4 w-4" />
+                        <span>{app.likes}</span>
                       </div>
                       <Button
                         size="sm"

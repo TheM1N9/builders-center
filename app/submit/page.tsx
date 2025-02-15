@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
 
 export default function SubmitPage() {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ export default function SubmitPage() {
         tags,
         creator_id: user.id,
         status: "pending",
+        comments_enabled: formData.get("comments_enabled") === "on",
       });
 
       if (error) throw error;
@@ -141,6 +143,15 @@ export default function SubmitPage() {
                 id="tags"
                 name="tags"
                 placeholder="react, typescript, web3"
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="comments_enabled">Enable Comments</Label>
+              <Switch
+                id="comments_enabled"
+                name="comments_enabled"
+                defaultChecked={true}
               />
             </div>
 
