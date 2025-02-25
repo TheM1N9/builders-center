@@ -13,14 +13,14 @@ import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
 
 export default function SubmitPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
+    if (!user || !profile) {
       toast({
         title: "Error",
         description: "You must be logged in to submit an application",
@@ -48,7 +48,7 @@ export default function SubmitPage() {
         url: formData.get("url"),
         screenshot_url: formData.get("screenshot"),
         tags,
-        creator_id: user.id,
+        creator_id: profile.id,
         status: "pending",
         comments_enabled: formData.get("comments_enabled") === "on",
       });
@@ -146,14 +146,15 @@ export default function SubmitPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between space-x-2">
+            {/* never enable comments and remove this */}
+            {/* <div className="flex items-center justify-between space-x-2">
               <Label htmlFor="comments_enabled">Enable Comments</Label>
               <Switch
                 id="comments_enabled"
                 name="comments_enabled"
                 defaultChecked={true}
               />
-            </div>
+            </div> */}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit Application"}

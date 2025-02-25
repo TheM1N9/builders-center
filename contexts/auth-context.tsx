@@ -1,43 +1,52 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { User } from "@supabase/supabase-js";
+import { createContext, useContext } from "react";
+import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 type AuthContextType = {
-  user: User | null;
+  user: any | null;
   loading: boolean;
+  profile: any | null;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  profile: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const [profile, setProfile] = useState(null);
+  const loading = status === "loading";
+  const user = session?.user || null;
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    async function fetchProfile() {
+      if (!user?.email) return;
 
-    // Listen for changes on auth state
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("email", user.email)
+          .single();
 
-    return () => subscription.unsubscribe();
-  }, []);
+        if (!error && data) {
+          setProfile(data);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    }
+
+    fetchProfile();
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, profile }}>
       {children}
     </AuthContext.Provider>
   );

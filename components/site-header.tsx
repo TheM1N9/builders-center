@@ -6,7 +6,6 @@ import { MainNav } from "@/components/main-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { supabase } from "@/lib/supabase";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +16,7 @@ import {
 import { Menu, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { signIn, signOut } from "next-auth/react";
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -24,9 +24,7 @@ export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-    router.push("/");
+    await signOut({ callbackUrl: "/" });
   };
 
   return (
@@ -120,11 +118,15 @@ export function SiteHeader() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/login">Login</Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signIn("google")}
+              >
+                Login
               </Button>
-              <Button size="sm" asChild>
-                <Link href="/register">Register</Link>
+              <Button size="sm" onClick={() => signIn("google")}>
+                Register
               </Button>
             </div>
           )}

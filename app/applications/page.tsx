@@ -24,7 +24,7 @@ type ApplicationWithProfile = Application & {
 };
 
 export default function ApplicationsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [applications, setApplications] = useState<ApplicationWithProfile[]>(
     []
   );
@@ -35,7 +35,7 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     fetchApplications();
-  }, [user]);
+  }, [user, profile]);
 
   const filteredApplications = applications.filter((app) => {
     if (!searchQuery) return true;
@@ -65,33 +65,28 @@ export default function ApplicationsPage() {
       if (appsError) throw appsError;
 
       let userLikes: string[] = [];
-      if (user) {
+      if (profile?.id) {
         const { data: likes } = await supabase
           .from("likes")
           .select("application_id")
-          .eq("user_id", user.id);
-        userLikes = (likes || []).map((like) => like.application_id);
+          .eq("user_id", profile.id);
+
+        userLikes = likes?.map((like) => like.application_id) || [];
       }
 
-      const formattedApps: ApplicationWithProfile[] = (apps || []).map(
-        (app) => ({
-          ...app,
-          likes: app.likes[0]?.count || 0,
-          isLiked: userLikes.includes(app.id),
-          creator_user_id: app.creator?.user_id,
-          creator: {
-            user_id: app.creator?.user_id || "",
-            role: app.creator?.role,
-          },
-        })
-      );
+      const formattedApps = apps?.map((app: any) => ({
+        ...app,
+        likes: app.likes[0]?.count || 0,
+        isLiked: userLikes.includes(app.id),
+        creator_user_id: app.creator?.user_id,
+      }));
 
-      setApplications(formattedApps);
+      setApplications(formattedApps || []);
     } catch (error) {
       console.error("Error fetching applications:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch applications",
+        description: "Failed to load applications",
         variant: "destructive",
       });
     } finally {
@@ -100,10 +95,10 @@ export default function ApplicationsPage() {
   };
 
   const handleLike = async (id: string, isLiked: boolean) => {
-    if (!user) {
+    if (!user || !profile) {
       toast({
         title: "Authentication required",
-        description: "Please log in to like applications",
+        description: "Please sign in to like applications",
         variant: "destructive",
       });
       return;
@@ -111,32 +106,38 @@ export default function ApplicationsPage() {
 
     try {
       if (isLiked) {
+        // Unlike
         await supabase
           .from("likes")
           .delete()
           .eq("application_id", id)
-          .eq("user_id", user.id);
+          .eq("user_id", profile.id);
       } else {
-        await supabase
-          .from("likes")
-          .insert({ application_id: id, user_id: user.id });
+        // Like
+        await supabase.from("likes").insert({
+          application_id: id,
+          user_id: profile.id,
+        });
       }
 
-      setApplications((apps) =>
-        apps.map((app) =>
-          app.id === id
-            ? {
-                ...app,
-                likes: isLiked ? app.likes - 1 : app.likes + 1,
-                isLiked: !isLiked,
-              }
-            : app
-        )
+      // Update local state
+      setApplications(
+        applications.map((app) => {
+          if (app.id === id) {
+            return {
+              ...app,
+              likes: isLiked ? app.likes - 1 : app.likes + 1,
+              isLiked: !isLiked,
+            };
+          }
+          return app;
+        })
       );
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error updating like:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to update like",
         variant: "destructive",
       });
     }

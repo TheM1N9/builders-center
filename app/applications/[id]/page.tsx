@@ -106,7 +106,7 @@ type ApplicationWithDetails = Application & {
 
 export default function ApplicationPage() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const [application, setApplication] = useState<ApplicationWithDetails | null>(
     null
@@ -119,44 +119,28 @@ export default function ApplicationPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [isUserCreator, setIsUserCreator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      checkAdminStatus();
-    }
-  }, [user]);
-
-  const checkAdminStatus = async () => {
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user?.id)
-        .single();
-
-      if (error) throw error;
-      setIsAdmin(profile?.role === "admin");
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-    }
-  };
-
-  useEffect(() => {
     fetchApplication();
-  }, [id, user]);
+  }, [id, profile]);
 
   const fetchApplication = async () => {
     try {
-      // First, check if user is admin (if logged in)
-      let isAdmin = false;
-      if (user) {
-        const { data: profile } = await supabase
+      // First check admin status directly within this function
+      let adminStatus = false;
+      if (profile) {
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("role")
-          .eq("id", user.id)
+          .eq("id", profile.id)
           .single();
-        isAdmin = profile?.role === "admin";
+
+        if (!profileError) {
+          adminStatus = profileData?.role === "admin";
+          setIsAdmin(adminStatus); // Update the state for use elsewhere
+        }
       }
 
       const { data: app, error: appError } = await supabase
@@ -185,8 +169,11 @@ export default function ApplicationPage() {
       }
 
       // Access control logic
-      const isCreator = user?.id === app.creator_id;
-      if (app.status !== "approved" && !isCreator && !isAdmin) {
+      const isCreator = profile?.id === app.creator_id;
+      setIsUserCreator(isCreator);
+
+      // Use the directly fetched admin status for access control
+      if (app.status !== "approved" && !isCreator && !adminStatus) {
         toast({
           title: "Access Denied",
           description: "This application is not publicly available",
@@ -198,12 +185,12 @@ export default function ApplicationPage() {
 
       // Get user's like status if logged in
       let isLiked = false;
-      if (user) {
+      if (profile) {
         const { data: likeData } = await supabase
           .from("likes")
           .select("id")
           .eq("application_id", id)
-          .eq("user_id", user.id)
+          .eq("user_id", profile.id)
           .single();
         isLiked = !!likeData;
       }
@@ -305,7 +292,7 @@ export default function ApplicationPage() {
   };
 
   const handleLike = async () => {
-    if (!user) {
+    if (!profile) {
       toast({
         title: "Authentication required",
         description: "Please log in to like applications",
@@ -322,11 +309,11 @@ export default function ApplicationPage() {
           .from("likes")
           .delete()
           .eq("application_id", id)
-          .eq("user_id", user.id);
+          .eq("user_id", profile.id);
       } else {
         await supabase
           .from("likes")
-          .insert({ application_id: id, user_id: user.id });
+          .insert({ application_id: id, user_id: profile.id });
       }
 
       setApplication((prev) => {
@@ -348,7 +335,7 @@ export default function ApplicationPage() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
+    if (!profile) {
       toast({
         title: "Authentication required",
         description: "Please log in to comment",
@@ -361,7 +348,7 @@ export default function ApplicationPage() {
     try {
       const { error } = await supabase.from("comments").insert({
         application_id: id,
-        user_id: user.id,
+        user_id: profile.id,
         content: newComment.trim(),
       });
 
@@ -386,7 +373,7 @@ export default function ApplicationPage() {
   };
 
   const handleSubmitReply = async (commentId: string) => {
-    if (!user) {
+    if (!profile) {
       toast({
         title: "Authentication required",
         description: "Please log in to reply",
@@ -399,7 +386,7 @@ export default function ApplicationPage() {
     try {
       const { error } = await supabase.from("comment_replies").insert({
         comment_id: commentId,
-        user_id: user.id,
+        user_id: profile.id,
         content: replyContent.trim(),
       });
 
@@ -425,6 +412,8 @@ export default function ApplicationPage() {
   };
 
   const handleRequestReview = async () => {
+    if (!isUserCreator || !profile) return;
+
     try {
       const { error } = await supabase
         .from("applications")
@@ -432,8 +421,8 @@ export default function ApplicationPage() {
           review_requested_at: new Date().toISOString(),
           status: "pending",
         })
-        .eq("id", application?.id)
-        .eq("creator_id", user?.id);
+        .eq("id", id)
+        .eq("creator_id", profile.id);
 
       if (error) throw error;
 
@@ -454,12 +443,14 @@ export default function ApplicationPage() {
   };
 
   const handleDelete = async () => {
+    if (!isUserCreator || !profile) return;
+
     try {
       const { error } = await supabase
         .from("applications")
         .delete()
-        .eq("id", application?.id)
-        .eq("creator_id", user?.id);
+        .eq("id", id)
+        .eq("creator_id", profile.id);
 
       if (error) throw error;
 
@@ -557,7 +548,7 @@ export default function ApplicationPage() {
                   </Link>
                 )}
 
-                {application?.creator_id === user?.id && (
+                {(isUserCreator || isAdmin) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="icon">
@@ -565,36 +556,60 @@ export default function ApplicationPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link
-                          href={`/applications/${application.id}/edit`}
-                          className="flex items-center"
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-
-                      {(application.status === "rejected" ||
-                        (application.status === "pending" &&
-                          !application.review_requested_at)) && (
+                      {isUserCreator && (
                         <>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/applications/${application.id}/edit`}
+                              className="flex items-center"
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Edit
+                            </Link>
+                          </DropdownMenuItem>
+
+                          {application.status === "rejected" && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                document
+                                  .getElementById("review-dialog-trigger")
+                                  ?.click();
+                              }}
+                            >
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Request Review
+                            </DropdownMenuItem>
+                          )}
+
                           <DropdownMenuSeparator />
+
                           <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
                             onClick={() => {
                               document
-                                .getElementById("review-dialog-trigger")
+                                .getElementById("delete-dialog-trigger")
                                 ?.click();
                             }}
                           >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Request Review
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
                           </DropdownMenuItem>
                         </>
                       )}
 
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
+                      {isAdmin && !isUserCreator && (
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href={`/admin/applications/${application.id}`}
+                            className="flex items-center"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Admin Edit
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onClick={() => {
                           document
@@ -604,7 +619,7 @@ export default function ApplicationPage() {
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
-                      </DropdownMenuItem>
+                      </DropdownMenuItem> */}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -669,7 +684,7 @@ export default function ApplicationPage() {
           <Card className="mt-6 p-6">
             <h2 className="text-2xl font-semibold mb-6">Comments</h2>
 
-            {user && (
+            {profile && (
               <form onSubmit={handleSubmitComment} className="mb-6">
                 <div className="space-y-4">
                   <Textarea
@@ -718,7 +733,7 @@ export default function ApplicationPage() {
                     </p>
 
                     {/* Reply Button */}
-                    {user && (
+                    {profile && (
                       <Button
                         variant="ghost"
                         size="sm"
@@ -819,7 +834,7 @@ export default function ApplicationPage() {
       </div>
 
       {/* Add AlertDialogs outside the main content */}
-      {application?.creator_id === user?.id && (
+      {application?.creator_id === profile?.id && (
         <>
           <AlertDialog>
             <AlertDialogTrigger asChild>

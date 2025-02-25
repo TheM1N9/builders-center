@@ -33,7 +33,7 @@ type Application = {
 };
 
 export default function EditApplicationPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { id } = useParams();
@@ -42,10 +42,10 @@ export default function EditApplicationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user && id) {
+    if (user && profile && id) {
       fetchApplication();
     }
-  }, [user, id]);
+  }, [user, profile, id]);
 
   const fetchApplication = async () => {
     try {
@@ -53,7 +53,7 @@ export default function EditApplicationPage() {
         .from("applications")
         .select("*")
         .eq("id", id)
-        .eq("creator_id", user?.id)
+        .eq("creator_id", profile?.id)
         .single();
 
       if (error) throw error;
@@ -77,7 +77,7 @@ export default function EditApplicationPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user || !application) return;
+    if (!user || !profile || !application) return;
 
     setIsSubmitting(true);
     const form = e.currentTarget;
@@ -102,13 +102,13 @@ export default function EditApplicationPage() {
           comments_enabled: formData.get("comments_enabled") === "on",
         })
         .eq("id", id)
-        .eq("creator_id", user.id);
+        .eq("creator_id", profile.id);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Your application has been updated",
+        description: "Application updated successfully",
       });
       router.push("/profile");
     } catch (error: any) {
@@ -246,14 +246,15 @@ export default function EditApplicationPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between space-x-2">
+            {/* never enable comments and remove this */}
+            {/* <div className="flex items-center justify-between space-x-2">
               <Label htmlFor="comments_enabled">Enable Comments</Label>
               <Switch
                 id="comments_enabled"
                 name="comments_enabled"
                 defaultChecked={application.comments_enabled}
               />
-            </div>
+            </div> */}
 
             <div className="flex gap-4">
               <Button

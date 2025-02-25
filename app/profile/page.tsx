@@ -53,8 +53,8 @@ type ProfileApplication = Application & {
 };
 
 export default function ProfilePage() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { user, profile } = useAuth();
+  const [myProfile, setMyProfile] = useState<Profile | null>(null);
   const [myApplications, setMyApplications] = useState<ProfileApplication[]>(
     []
   );
@@ -76,103 +76,105 @@ export default function ProfilePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
+    if (user && profile) {
+      // console.log("Profile data:", profile);
+      setMyProfile(profile);
+      setEditedUserId(profile.user_id || "");
+      setEditedPublicEmail(profile.public_email || false);
+      fetchUserData();
+    } else if (!user && !loading) {
+      router.push("/login");
     }
-  }, [user]);
+  }, [user, profile, loading]);
 
-  const fetchProfile = async () => {
+  const fetchUserData = async () => {
+    if (!profile?.id) return;
+
+    setLoading(true);
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user?.id)
-        .single();
-
-      if (profileError) throw profileError;
-
-      setProfile(profileData);
-      setEditedUserId(profileData.user_id);
-      setEditedPublicEmail(profileData.public_email);
-
-      // Fetch my applications
-      const { data: myApps, error: myAppsError } = await supabase
+      // Fetch user's applications
+      const { data: apps, error: appsError } = await supabase
         .from("applications")
         .select(
           `
           *,
-          likes(count),
-          creator:profiles!creator_id(user_id, role)
+          likes(count)
         `
         )
-        .eq("creator_id", user?.id)
+        .eq("creator_id", profile.id)
         .order("created_at", { ascending: false });
 
-      if (myAppsError) throw myAppsError;
+      if (appsError) throw appsError;
 
       // Fetch liked applications
-      const { data: likedApps, error: likedAppsError } = await supabase
-        .from("applications")
+      const { data: likedApps, error: likedError } = await supabase
+        .from("likes")
         .select(
           `
-          *,
-          likes(count),
-          creator:profiles!creator_id(user_id, role)
+          application_id,
+          applications!inner(
+            *,
+            likes(count),
+            profiles!inner(user_id)
+          )
         `
         )
-        .in(
-          "id",
-          (
-            await supabase
-              .from("likes")
-              .select("application_id")
-              .eq("user_id", user?.id)
-          ).data?.map((like) => like.application_id) || []
-        )
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .eq("user_id", profile.id);
 
-      if (likedAppsError) throw likedAppsError;
+      if (likedError) throw likedError;
 
       // Fetch commented applications
-      const { data: commentedApps, error: commentedAppsError } = await supabase
-        .from("applications")
+      const { data: commentedApps, error: commentedError } = await supabase
+        .from("comments")
         .select(
           `
-          *,
-          likes(count),
-          creator:profiles!creator_id(user_id, role)
+          application_id,
+          applications!inner(
+            *,
+            likes(count),
+            profiles!inner(user_id)
+          )
         `
         )
-        .in(
-          "id",
-          (
-            await supabase
-              .from("comments")
-              .select("application_id")
-              .eq("user_id", user?.id)
-          ).data?.map((comment) => comment.application_id) || []
-        )
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
+        .eq("user_id", profile.id);
 
-      if (commentedAppsError) throw commentedAppsError;
+      if (commentedError) throw commentedError;
 
       // Format applications
-      const formatApps = (apps: any[]) =>
-        apps.map((app) => ({
-          ...app,
-          likes: app.likes[0]?.count || 0,
+      const formattedApps = (apps || []).map((app) => ({
+        ...app,
+        likes: app.likes[0]?.count || 0,
+      }));
+
+      // Format liked applications
+      const formattedLikedApps = (likedApps || []).map((item: any) => ({
+        ...item.applications,
+        likes: item.applications.likes?.[0]?.count || 0,
+        creator_user_id: item.applications.profiles?.user_id,
+      }));
+
+      // Format commented applications (removing duplicates)
+      const commentedAppIds = new Set();
+      const formattedCommentedApps = (commentedApps || [])
+        .filter((item: any) => {
+          if (commentedAppIds.has(item.application_id)) return false;
+          commentedAppIds.add(item.application_id);
+          return true;
+        })
+        .map((item: any) => ({
+          ...item.applications,
+          likes: item.applications.likes?.[0]?.count || 0,
+          creator_user_id: item.applications.profiles?.user_id,
         }));
 
-      setMyApplications(formatApps(myApps || []));
-      setLikedApplications(formatApps(likedApps || []));
-      setCommentedApplications(formatApps(commentedApps || []));
-    } catch (error: any) {
-      console.error("Error:", error);
+      setMyApplications(formattedApps);
+      setLikedApplications(formattedLikedApps);
+      setCommentedApplications(formattedCommentedApps);
+    } catch (error) {
+      // console.error("Error fetching user data:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to load your profile data",
         variant: "destructive",
       });
     } finally {
@@ -181,24 +183,14 @@ export default function ProfilePage() {
   };
 
   const handleSaveProfile = async () => {
-    try {
-      // Check if user_id is already taken
-      if (editedUserId !== profile?.user_id) {
-        const { data: existingUser } = await supabase
-          .from("profiles")
-          .select("user_id")
-          .eq("user_id", editedUserId)
-          .single();
+    if (!profile?.id) return;
 
-        if (existingUser) {
-          toast({
-            title: "Error",
-            description: "This username is already taken",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
+    try {
+      // console.log("Updating profile with ID:", profile.id);
+      // console.log("New values:", {
+      //   user_id: editedUserId,
+      //   public_email: editedPublicEmail,
+      // });
 
       const { error } = await supabase
         .from("profiles")
@@ -206,25 +198,51 @@ export default function ProfilePage() {
           user_id: editedUserId,
           public_email: editedPublicEmail,
         })
-        .eq("id", user?.id);
+        .eq("id", profile.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Profile update error:", error);
+        throw error;
+      }
 
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              user_id: editedUserId,
-              public_email: editedPublicEmail,
-            }
-          : null
-      );
+      // Update local state
+      setMyProfile({
+        ...myProfile!,
+        user_id: editedUserId,
+        public_email: editedPublicEmail,
+      });
 
       setIsEditing(false);
-
       toast({
         title: "Success",
         description: "Profile updated successfully",
+      });
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteApplication = async (id: string) => {
+    if (!profile?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from("applications")
+        .delete()
+        .eq("id", id)
+        .eq("creator_id", profile.id);
+
+      if (error) throw error;
+
+      setMyApplications(myApplications.filter((app) => app.id !== id));
+      toast({
+        title: "Success",
+        description: "Application deleted successfully",
       });
     } catch (error: any) {
       toast({
@@ -232,6 +250,8 @@ export default function ProfilePage() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
