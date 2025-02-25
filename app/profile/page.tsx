@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type Profile = {
+  id?: string;
   user_id: string;
   email: string;
   public_email: boolean;
@@ -46,10 +47,6 @@ type Profile = {
 
 type ProfileApplication = Application & {
   likes: number;
-  creator?: {
-    user_id: string;
-    role?: string;
-  };
 };
 
 export default function ProfilePage() {
@@ -77,7 +74,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user && profile) {
-      // console.log("Profile data:", profile);
       setMyProfile(profile);
       setEditedUserId(profile.user_id || "");
       setEditedPublicEmail(profile.public_email || false);
@@ -90,7 +86,6 @@ export default function ProfilePage() {
   const fetchUserData = async () => {
     if (!profile?.id) return;
 
-    setLoading(true);
     try {
       // Fetch user's applications
       const { data: apps, error: appsError } = await supabase
@@ -106,75 +101,79 @@ export default function ProfilePage() {
 
       if (appsError) throw appsError;
 
-      // Fetch liked applications
-      const { data: likedApps, error: likedError } = await supabase
-        .from("likes")
-        .select(
-          `
-          application_id,
-          applications!inner(
-            *,
-            likes(count),
-            profiles!inner(user_id)
-          )
-        `
-        )
-        .eq("user_id", profile.id);
-
-      if (likedError) throw likedError;
-
-      // Fetch commented applications
-      const { data: commentedApps, error: commentedError } = await supabase
-        .from("comments")
-        .select(
-          `
-          application_id,
-          applications!inner(
-            *,
-            likes(count),
-            profiles!inner(user_id)
-          )
-        `
-        )
-        .eq("user_id", profile.id);
-
-      if (commentedError) throw commentedError;
-
-      // Format applications
-      const formattedApps = (apps || []).map((app) => ({
+      const formattedApps = apps.map((app: any) => ({
         ...app,
         likes: app.likes[0]?.count || 0,
       }));
 
-      // Format liked applications
-      const formattedLikedApps = (likedApps || []).map((item: any) => ({
-        ...item.applications,
-        likes: item.applications.likes?.[0]?.count || 0,
-        creator_user_id: item.applications.profiles?.user_id,
-      }));
+      setMyApplications(formattedApps);
 
-      // Format commented applications (removing duplicates)
-      const commentedAppIds = new Set();
-      const formattedCommentedApps = (commentedApps || [])
-        .filter((item: any) => {
-          if (commentedAppIds.has(item.application_id)) return false;
-          commentedAppIds.add(item.application_id);
-          return true;
-        })
-        .map((item: any) => ({
-          ...item.applications,
-          likes: item.applications.likes?.[0]?.count || 0,
-          creator_user_id: item.applications.profiles?.user_id,
+      // Fetch liked applications
+      const { data: likes, error: likesError } = await supabase
+        .from("likes")
+        .select(
+          `
+          application_id,
+          application:applications(
+            *,
+            likes(count),
+            creator:profiles!creator_id(user_id)
+          )
+        `
+        )
+        .eq("user_id", profile.id);
+
+      if (likesError) throw likesError;
+
+      const formattedLikes = likes
+        .filter((like: any) => like.application)
+        .map((like: any) => ({
+          ...like.application,
+          likes: like.application.likes[0]?.count || 0,
+          creator_user_id: like.application.creator?.user_id,
         }));
 
-      setMyApplications(formattedApps);
-      setLikedApplications(formattedLikedApps);
-      setCommentedApplications(formattedCommentedApps);
+      setLikedApplications(formattedLikes);
+
+      // Fetch commented applications
+      const { data: comments, error: commentsError } = await supabase
+        .from("comments")
+        .select(
+          `
+          application_id,
+          application:applications(
+            *,
+            likes(count),
+            creator:profiles!creator_id(user_id)
+          )
+        `
+        )
+        .eq("user_id", profile.id);
+
+      if (commentsError) throw commentsError;
+
+      // Filter out duplicates by application_id
+      const uniqueApps = Array.from(
+        new Map(
+          comments
+            .filter((comment: any) => comment.application)
+            .map((comment: any) => [
+              comment.application.id,
+              {
+                ...comment.application,
+                likes: comment.application.likes[0]?.count || 0,
+                creator_user_id: comment.application.creator?.user_id,
+              },
+            ])
+        ).values()
+      );
+
+      setCommentedApplications(uniqueApps);
     } catch (error) {
-      // console.error("Error fetching user data:", error);
+      console.error("Error fetching user data:", error);
       toast({
         title: "Error",
-        description: "Failed to load your profile data",
+        description: "Failed to load user data",
         variant: "destructive",
       });
     } finally {
@@ -186,33 +185,34 @@ export default function ProfilePage() {
     if (!profile?.id) return;
 
     try {
-      // console.log("Updating profile with ID:", profile.id);
-      // console.log("New values:", {
-      //   user_id: editedUserId,
-      //   public_email: editedPublicEmail,
-      // });
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .update({
           user_id: editedUserId,
           public_email: editedPublicEmail,
         })
-        .eq("id", profile.id);
+        .eq("id", profile.id)
+        .select();
 
       if (error) {
-        console.error("Profile update error:", error);
+        console.error("Update error:", error);
         throw error;
       }
 
-      // Update local state
-      setMyProfile({
-        ...myProfile!,
-        user_id: editedUserId,
-        public_email: editedPublicEmail,
-      });
+      // Update local state with the returned data
+      if (data && data.length > 0) {
+        setMyProfile({
+          ...myProfile!,
+          user_id: data[0].user_id,
+          public_email: data[0].public_email,
+        });
+      }
 
       setIsEditing(false);
+
+      // Force refresh the page to update the auth context
+      window.location.reload();
+
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -221,38 +221,40 @@ export default function ProfilePage() {
       console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile",
+        description: error.message,
         variant: "destructive",
       });
     }
   };
 
   const handleDeleteApplication = async (id: string) => {
-    if (!profile?.id) return;
-
     try {
       const { error } = await supabase
         .from("applications")
         .delete()
-        .eq("id", id)
-        .eq("creator_id", profile.id);
+        .eq("id", id);
 
       if (error) throw error;
 
       setMyApplications(myApplications.filter((app) => app.id !== id));
+      setDeletingId(null);
       toast({
         title: "Success",
         description: "Application deleted successfully",
       });
     } catch (error: any) {
+      console.error("Error deleting application:", error);
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setDeletingId(null);
     }
+  };
+
+  // Add this function to handle the toggle change
+  const handlePublicEmailToggle = (checked: boolean) => {
+    setEditedPublicEmail(checked);
   };
 
   if (!user) {
@@ -339,7 +341,7 @@ export default function ProfilePage() {
                   {isEditing ? (
                     <Switch
                       checked={editedPublicEmail}
-                      onCheckedChange={setEditedPublicEmail}
+                      onCheckedChange={handlePublicEmailToggle}
                       className="scale-75"
                     />
                   ) : (

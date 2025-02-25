@@ -1,10 +1,10 @@
-# Builders Center
+# Builders Central
 
-Welcome to **Builders Center**, a centralized hub for managing and showcasing web applications. This platform is designed to empower developers by providing a space to display their projects, gain insights, and connect with a community of like-minded individuals.
+Welcome to **Builders Central**, a centralized hub for managing and showcasing web applications. This platform is designed to empower developers by providing a space to display their projects, gain insights, and connect with a community of like-minded individuals.
 
 ## About
 
-Builders Center was created to solve the problem of project discovery and showcase in the developer community. Whether you're looking to share your latest project or discover innovative applications, Builders Center provides the platform to connect builders with their audience.
+Builders Central was created to solve the problem of project discovery and showcase in the developer community. Whether you're looking to share your latest project or discover innovative applications, Builders Central provides the platform to connect builders with their audience.
 
 ## Key Features
 
@@ -39,4 +39,4 @@ Built with ❤️ for the developer community by [@them1n9](https://github.com/t
 
 ---
 
-Thank you for choosing Builders Center. We look forward to seeing your amazing projects and contributions! 
+Thank you for choosing Builders Central. We look forward to seeing your amazing projects and contributions! 

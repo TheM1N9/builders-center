@@ -13,7 +13,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Builders Center",
+  title: "Builders Central",
   description: "A centralized hub for managing and showcasing web applications",
 };
 

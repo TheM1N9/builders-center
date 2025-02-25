@@ -47,7 +47,7 @@ export function SiteHeader() {
                     className="text-lg font-semibold"
                     onClick={() => setIsOpen(false)}
                   >
-                    Builders Center
+                    Builders Central
                   </Link>
                   <Link
                     href="/applications"
@@ -77,7 +77,7 @@ export function SiteHeader() {
             </Sheet>
           </div>
           <Link href="/" className="text-2xl font-bold">
-            Builders Center
+            Builders Central
           </Link>
         </div>
 
