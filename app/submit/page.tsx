@@ -50,7 +50,8 @@ export default function SubmitPage() {
         tags,
         creator_id: profile.id,
         status: "pending",
-        comments_enabled: formData.get("comments_enabled") === "on",
+        // comments_enabled: formData.get("comments_enabled") === "on",
+        comments_enabled: true,
       });
 
       if (error) throw error;

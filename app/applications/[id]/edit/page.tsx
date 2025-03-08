@@ -99,7 +99,8 @@ export default function EditApplicationPage() {
           url: formData.get("url"),
           screenshot_url: formData.get("screenshot"),
           tags,
-          comments_enabled: formData.get("comments_enabled") === "on",
+          // comments_enabled: formData.get("comments_enabled") === "on",
+          comments_enabled: true,
         })
         .eq("id", id)
         .eq("creator_id", profile.id);
