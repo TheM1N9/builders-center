@@ -224,13 +224,13 @@ export default function ApplicationPage() {
       if (commentsError) throw commentsError;
 
       // Add console.log to see the actual data structure
-      console.log("Raw comments data:", commentsData);
+      // console.log("Raw comments data:", commentsData);
 
       // Format the comments with proper user information
       const formattedComments: Comment[] =
         (commentsData as unknown as SupabaseRawComment[])?.map((comment) => {
           if (!comment.user) {
-            console.error("Missing user data for comment:", comment);
+            // console.error("Missing user data for comment:", comment);
             return {
               id: comment.id,
               content: comment.content,
@@ -279,7 +279,7 @@ export default function ApplicationPage() {
         comments_enabled: app.comments_enabled,
       });
     } catch (error: any) {
-      console.error("Error fetching application:", error);
+      // console.error("Error fetching application:", error);
       toast({
         title: "Error",
         description: "Failed to fetch application details",
@@ -301,33 +301,73 @@ export default function ApplicationPage() {
       return;
     }
 
-    if (!application) return;
-
     try {
-      if (application.isLiked) {
-        await supabase
+      // Check if the user is trying to like their own application
+      const isOwnApplication = application?.creator_id === profile.id;
+
+      // First, handle the like/unlike action
+      if (application?.isLiked) {
+        const { error: unlikeError } = await supabase
           .from("likes")
           .delete()
           .eq("application_id", id)
           .eq("user_id", profile.id);
-      } else {
-        await supabase
-          .from("likes")
-          .insert({ application_id: id, user_id: profile.id });
-      }
 
-      setApplication((prev) => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
-          isLiked: !prev.isLiked,
-        };
-      });
+        if (unlikeError) throw unlikeError;
+
+        setApplication((prev) => ({
+          ...prev!,
+          likes: prev!.likes - 1,
+          isLiked: false,
+        }));
+      } else {
+        const { error: likeError } = await supabase.from("likes").insert({
+          application_id: id,
+          user_id: profile.id,
+        });
+
+        if (likeError) throw likeError;
+
+        setApplication((prev) => ({
+          ...prev!,
+          likes: prev!.likes + 1,
+          isLiked: true,
+        }));
+
+        // Only create notification if the user is not liking their own application
+        if (!isOwnApplication) {
+          // Check for existing notification to prevent duplicates
+          const { data: existingNotification } = await supabase
+            .from("notifications")
+            .select()
+            .eq("user_id", application?.creator_id)
+            .eq("type", "like")
+            .eq("application_id", id)
+            .eq("action_user_id", profile.id)
+            .single();
+
+          if (!existingNotification) {
+            const { error: notificationError } = await supabase
+              .from("notifications")
+              .insert({
+                user_id: application?.creator_id,
+                title: "New Like",
+                message: `${profile.user_id} liked your application "${application?.title}"`,
+                type: "like",
+                application_id: id,
+                action_user_id: profile.id,
+                read: false,
+              });
+
+            if (notificationError) throw notificationError;
+          }
+        }
+      }
     } catch (error: any) {
+      console.error("Error handling like:", error);
       toast({
         title: "Error",
-        description: "Failed to update like status",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -335,16 +375,9 @@ export default function ApplicationPage() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to comment",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    if (!profile) return;
     setIsSubmittingComment(true);
+
     try {
       const { error } = await supabase.from("comments").insert({
         application_id: id,
@@ -353,6 +386,21 @@ export default function ApplicationPage() {
       });
 
       if (error) throw error;
+
+      // Add notification for the app owner
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: application?.creator_id,
+          type: "comment",
+          title: "New Comment",
+          message: `${profile.user_id} commented on your application "${application?.title}"`,
+          application_id: application?.id,
+          action_user_id: profile.id,
+          read: false,
+        });
+
+      if (notificationError) throw notificationError;
 
       setNewComment("");
       await fetchApplication(); // Refresh comments
@@ -373,14 +421,7 @@ export default function ApplicationPage() {
   };
 
   const handleSubmitReply = async (commentId: string) => {
-    if (!profile) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to reply",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!profile || !application) return;
 
     setIsSubmittingReply(true);
     try {
@@ -391,6 +432,30 @@ export default function ApplicationPage() {
       });
 
       if (error) throw error;
+
+      // Get the original comment's author
+      const { data: comment, error: commentError } = await supabase
+        .from("comments")
+        .select("user_id")
+        .eq("id", commentId)
+        .single();
+
+      if (commentError) throw commentError;
+
+      // Add notification for the comment author
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: comment.user_id,
+          type: "comment",
+          title: "New Reply",
+          message: `${profile.user_id} replied to your comment on "${application.title}"`,
+          application_id: application.id,
+          action_user_id: profile.id,
+          read: false,
+        });
+
+      if (notificationError) throw notificationError;
 
       setReplyContent("");
       setReplyingTo(null);
@@ -483,6 +548,61 @@ export default function ApplicationPage() {
       toast({
         title: "Link copied",
         description: "Application link copied to clipboard",
+      });
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !profile) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to comment",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // First, add the comment
+      const { error: commentError } = await supabase.from("comments").insert({
+        application_id: id,
+        user_id: profile.id,
+        content: newComment,
+      });
+
+      if (commentError) throw commentError;
+
+      // Create notification for the application owner
+      if (application?.creator_id !== profile.id) {
+        // Don't notify if commenting on own app
+        const { error: notificationError } = await supabase
+          .from("notifications")
+          .insert({
+            user_id: application?.creator_id,
+            type: "comment",
+            title: "New Comment",
+            message: `${profile.user_id} commented on your application "${application?.title}"`,
+            application_id: id,
+            action_user_id: profile.id,
+          });
+
+        if (notificationError) throw notificationError;
+      }
+
+      setNewComment("");
+      await fetchApplication();
+
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
+    } catch (error) {
+      // console.error("Error adding comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
       });
     }
   };
@@ -715,12 +835,10 @@ export default function ApplicationPage() {
                     {/* Comment Content */}
                     <div className="flex justify-between items-start mb-2">
                       <Link
-                        href={`/users/${
-                          comment.user?.user_id || "deleted-user"
-                        }`}
-                        className="font-medium hover:text-primary"
+                        href={`/users/${comment.user.user_id}`}
+                        className="text-sm text-muted-foreground hover:text-primary"
                       >
-                        @{comment.user?.user_id || "deleted-user"}
+                        {comment.user.user_id}
                       </Link>
                       <span className="text-sm text-muted-foreground">
                         {formatDistanceToNow(new Date(comment.created_at), {
@@ -728,93 +846,64 @@ export default function ApplicationPage() {
                         })}
                       </span>
                     </div>
-                    <p className="text-foreground whitespace-pre-wrap mb-2">
-                      {comment.content}
-                    </p>
-
-                    {/* Reply Button */}
-                    {profile && (
+                    <p className="mb-2">{comment.content}</p>
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() =>
-                          setReplyingTo(
-                            replyingTo === comment.id ? null : comment.id
-                          )
-                        }
-                        className="mb-2"
+                        onClick={() => setReplyingTo(comment.id)}
                       >
                         Reply
                       </Button>
-                    )}
+                    </div>
 
-                    {/* Reply Form */}
+                    {/* Reply Input */}
                     {replyingTo === comment.id && (
                       <form
                         onSubmit={(e) => {
                           e.preventDefault();
                           handleSubmitReply(comment.id);
                         }}
-                        className="mb-4 pl-6 border-l-2"
+                        className="mt-4"
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-4">
                           <Textarea
                             placeholder="Write a reply..."
                             value={replyContent}
                             onChange={(e) => setReplyContent(e.target.value)}
                             required
-                            className="min-h-[80px]"
+                            className="min-h-[100px]"
                           />
-                          <div className="flex gap-2">
-                            <Button
-                              type="submit"
-                              size="sm"
-                              disabled={
-                                isSubmittingReply || !replyContent.trim()
-                              }
-                            >
-                              {isSubmittingReply ? "Posting..." : "Post Reply"}
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setReplyingTo(null);
-                                setReplyContent("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
+                          <Button
+                            type="submit"
+                            disabled={isSubmittingReply || !replyContent.trim()}
+                          >
+                            {isSubmittingReply ? "Posting..." : "Post Reply"}
+                          </Button>
                         </div>
                       </form>
                     )}
 
                     {/* Replies */}
                     {comment.replies.length > 0 && (
-                      <div className="pl-6 mt-4 space-y-4 border-l-2">
+                      <div className="mt-4 space-y-4">
                         {comment.replies.map((reply) => (
-                          <div key={reply.id} className="relative">
-                            <div className="flex justify-between items-start mb-1">
+                          <div key={reply.id} className="border-l-2 pl-4">
+                            <div className="flex justify-between items-start mb-2">
                               <Link
                                 href={`/users/${reply.user.user_id}`}
-                                className="font-medium hover:text-primary"
+                                className="text-sm text-muted-foreground hover:text-primary"
                               >
-                                @{reply.user.user_id}
+                                {reply.user.user_id}
                               </Link>
                               <span className="text-sm text-muted-foreground">
                                 {formatDistanceToNow(
                                   new Date(reply.created_at),
-                                  {
-                                    addSuffix: true,
-                                  }
+                                  { addSuffix: true }
                                 )}
                               </span>
                             </div>
-                            <p className="text-foreground whitespace-pre-wrap text-sm">
-                              {reply.content}
-                            </p>
+                            <p>{reply.content}</p>
                           </div>
                         ))}
                       </div>
@@ -826,63 +915,12 @@ export default function ApplicationPage() {
           </Card>
         ) : (
           <Card className="mt-6 p-6">
-            <p className="text-center text-muted-foreground">
-              Comments are disabled for this application
+            <p className="text-muted-foreground text-center py-4">
+              Comments are disabled for this application.
             </p>
           </Card>
         )}
       </div>
-
-      {/* Add AlertDialogs outside the main content */}
-      {application?.creator_id === profile?.id && (
-        <>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button id="review-dialog-trigger" className="hidden">
-                Request Review
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Request Review</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to request a review? This will notify
-                  our moderators to review your application.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRequestReview}>
-                  Request Review
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button id="delete-dialog-trigger" className="hidden">
-                Delete
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Application</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this application? This action
-                  cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
     </div>
   );
 }

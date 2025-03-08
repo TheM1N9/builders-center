@@ -17,6 +17,7 @@ import { Menu, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { signIn, signOut } from "next-auth/react";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 export function SiteHeader() {
   const { user } = useAuth();
@@ -86,6 +87,7 @@ export function SiteHeader() {
           <div className="hidden md:flex">
             <MainNav />
           </div>
+          {user && <NotificationsDropdown />}
           <ThemeToggle />
 
           {user ? (

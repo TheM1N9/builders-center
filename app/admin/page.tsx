@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { useNotifications } from "@/contexts/notifications-context";
 
 // Add this to your types/index.ts file if not already present
 // export type AdminRole = 'admin' | 'user';
@@ -40,6 +41,7 @@ export default function AdminPage() {
     useState<ApplicationStatus>("pending");
   const { toast } = useToast();
   const router = useRouter();
+  const { notifications, markAsRead } = useNotifications();
 
   useEffect(() => {
     if (user && profile) {
@@ -119,6 +121,14 @@ export default function AdminPage() {
 
   const handleStatusChange = async (id: string, status: ApplicationStatus) => {
     try {
+      const { data: app, error: fetchError } = await supabase
+        .from("applications")
+        .select("title, creator_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from("applications")
         .update({
@@ -128,6 +138,33 @@ export default function AdminPage() {
         .eq("id", id);
 
       if (error) throw error;
+
+      // Create notification for the application creator
+      const notificationType = status === "approved" ? "approval" : "rejection";
+      const notificationTitle =
+        status === "approved" ? "Application Approved" : "Application Rejected";
+      const notificationMessage =
+        status === "approved"
+          ? `Your application "${app.title}" has been approved and is now public.`
+          : `Your application "${app.title}" has been rejected. Please check the requirements and try again.`;
+
+      // console.log("Creating notification for user:", app.creator_id);
+
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: app.creator_id,
+          type: notificationType,
+          title: notificationTitle,
+          message: notificationMessage,
+          application_id: id,
+          action_user_id: profile?.id,
+          read: false,
+        });
+
+      if (notificationError) {
+        console.error("Error creating notification:", notificationError);
+      }
 
       setApplications(applications.filter((app) => app.id !== id));
 

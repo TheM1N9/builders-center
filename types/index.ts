@@ -36,4 +36,18 @@ declare module "next-auth" {
             image?: string | null;
         };
     }
-} 
+}
+
+export type NotificationType = 'like' | 'comment' | 'approval' | 'rejection';
+
+export type Notification = {
+    id: string;
+    user_id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    read: boolean;
+    created_at: string;
+    application_id?: string;
+    action_user_id?: string;
+}; 

@@ -47,6 +47,8 @@ type Profile = {
 
 type ProfileApplication = Application & {
   likes: number;
+  isLiked: boolean;
+  creator_user_id?: string;
 };
 
 export default function ProfilePage() {
@@ -87,6 +89,14 @@ export default function ProfilePage() {
     if (!profile?.id) return;
 
     try {
+      // Fetch user's likes first to get the liked application IDs
+      const { data: userLikes } = await supabase
+        .from("likes")
+        .select("application_id")
+        .eq("user_id", profile.id);
+
+      const likedAppIds = userLikes?.map((like) => like.application_id) || [];
+
       // Fetch user's applications
       const { data: apps, error: appsError } = await supabase
         .from("applications")
@@ -104,6 +114,8 @@ export default function ProfilePage() {
       const formattedApps = apps.map((app: any) => ({
         ...app,
         likes: app.likes[0]?.count || 0,
+        isLiked: likedAppIds.includes(app.id),
+        creator_user_id: app.creator?.user_id,
       }));
 
       setMyApplications(formattedApps);
@@ -131,6 +143,7 @@ export default function ProfilePage() {
           ...like.application,
           likes: like.application.likes[0]?.count || 0,
           creator_user_id: like.application.creator?.user_id,
+          isLiked: true,
         }));
 
       setLikedApplications(formattedLikes);
@@ -152,7 +165,7 @@ export default function ProfilePage() {
 
       if (commentsError) throw commentsError;
 
-      // Filter out duplicates by application_id
+      // Filter out duplicates by application_id and add isLiked property
       const uniqueApps = Array.from(
         new Map(
           comments
@@ -163,6 +176,7 @@ export default function ProfilePage() {
                 ...comment.application,
                 likes: comment.application.likes[0]?.count || 0,
                 creator_user_id: comment.application.creator?.user_id,
+                isLiked: likedAppIds.includes(comment.application.id),
               },
             ])
         ).values()
@@ -255,6 +269,123 @@ export default function ProfilePage() {
   // Add this function to handle the toggle change
   const handlePublicEmailToggle = (checked: boolean) => {
     setEditedPublicEmail(checked);
+  };
+
+  const handleLike = async (id: string, isLiked: boolean) => {
+    if (!user || !profile) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to like applications",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get the application details first
+      const { data: application, error: appError } = await supabase
+        .from("applications")
+        .select("title, creator_id")
+        .eq("id", id)
+        .single();
+
+      if (appError) throw appError;
+
+      // Check if user is the creator
+      const isOwnApplication = application.creator_id === profile.id;
+
+      if (!isLiked) {
+        // Add like
+        const { error: likeError } = await supabase
+          .from("likes")
+          .insert({ application_id: id, user_id: profile.id });
+
+        if (likeError) throw likeError;
+
+        // Only create notification if not liking own application
+        if (!isOwnApplication) {
+          const { data: existingNotification } = await supabase
+            .from("notifications")
+            .select()
+            .eq("user_id", application.creator_id)
+            .eq("type", "like")
+            .eq("application_id", id)
+            .eq("action_user_id", profile.id)
+            .single();
+
+          if (!existingNotification) {
+            const { error: notificationError } = await supabase
+              .from("notifications")
+              .insert({
+                user_id: application.creator_id,
+                type: "like",
+                title: "New Like",
+                message: `${profile.user_id} liked your application "${application.title}"`,
+                application_id: id,
+                action_user_id: profile.id,
+                read: false,
+              });
+
+            if (notificationError) throw notificationError;
+          }
+        }
+      } else {
+        // Remove like
+        const { error } = await supabase
+          .from("likes")
+          .delete()
+          .eq("application_id", id)
+          .eq("user_id", profile.id);
+
+        if (error) throw error;
+      }
+
+      // Update all relevant states based on active tab
+      if (activeTab === "my") {
+        setMyApplications((apps) =>
+          apps.map((app) =>
+            app.id === id
+              ? {
+                  ...app,
+                  likes: isLiked ? app.likes - 1 : app.likes + 1,
+                  isLiked: !isLiked,
+                }
+              : app
+          )
+        );
+      } else if (activeTab === "liked") {
+        setLikedApplications((apps) =>
+          apps.map((app) =>
+            app.id === id
+              ? {
+                  ...app,
+                  likes: isLiked ? app.likes - 1 : app.likes + 1,
+                  isLiked: !isLiked,
+                }
+              : app
+          )
+        );
+      } else if (activeTab === "commented") {
+        setCommentedApplications((apps) =>
+          apps.map((app) =>
+            app.id === id
+              ? {
+                  ...app,
+                  likes: isLiked ? app.likes - 1 : app.likes + 1,
+                  isLiked: !isLiked,
+                }
+              : app
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error updating like:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update like",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!user) {
@@ -394,71 +525,171 @@ export default function ProfilePage() {
               key={app.id}
               className="block group"
             >
-              <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                <div className="flex flex-col h-full">
-                  <div className="relative w-full aspect-square max-h-[200px]">
-                    <Image
-                      src={app.screenshot_url}
-                      alt={app.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-3 flex flex-col h-[200px]">
-                    <div className="flex justify-between items-start gap-2">
-                      <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                        {app.title}
-                      </p>
-                      <Badge
-                        variant={
-                          app.status === "approved" ? "default" : "secondary"
-                        }
-                      >
-                        {app.status}
-                      </Badge>
+              {activeTab === "my" && (
+                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                  <div className="flex flex-col h-full">
+                    <div className="relative w-full aspect-square max-h-[200px]">
+                      <Image
+                        src={app.screenshot_url}
+                        alt={app.title}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {app.tags.slice(0, 3).map((tag) => (
+                    <div className="p-3 flex flex-col h-[200px]">
+                      <div className="flex justify-between items-start gap-2">
+                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                          {app.title}
+                        </p>
                         <Badge
-                          key={tag}
-                          variant="secondary"
-                          className="text-xs px-2 py-0"
+                          variant={
+                            app.status === "approved" ? "default" : "secondary"
+                          }
                         >
-                          {tag}
+                          {app.status}
                         </Badge>
-                      ))}
-                      {app.tags.length > 3 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{app.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                      {app.description}
-                    </p>
-
-                    <div className="flex justify-between items-center mt-auto">
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Heart className="h-4 w-4" />
-                        <span>{app.likes}</span>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.open(app.url, "_blank");
-                        }}
-                        className="text-xs"
-                      >
-                        Visit <ExternalLink className="ml-1 h-3 w-3" />
-                      </Button>
+
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {app.tags.slice(0, 3).map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs px-2 py-0"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                        {app.tags.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{app.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                        {app.description}
+                      </p>
+
+                      <div className="flex justify-between items-center mt-auto">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleLike(app.id, app.isLiked);
+                            }}
+                            className={app.isLiked ? "text-red-500" : ""}
+                          >
+                            <Heart
+                              className={`h-4 w-4 mr-1 ${
+                                app.isLiked ? "fill-current" : ""
+                              }`}
+                            />
+                            <span className="text-xs">{app.likes}</span>
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(app.url, "_blank");
+                          }}
+                          className="text-xs"
+                        >
+                          Visit <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              )}
+
+              {(activeTab === "liked" || activeTab === "commented") && (
+                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                  <div className="flex flex-col h-full">
+                    <div className="relative w-full aspect-square max-h-[200px]">
+                      <Image
+                        src={app.screenshot_url}
+                        alt={app.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-3 flex flex-col h-[200px]">
+                      <div className="flex justify-between items-start gap-2">
+                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                          {app.title}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/users/${app.creator_user_id}`}
+                            className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            @{app.creator_user_id}
+                          </Link>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {app.tags.slice(0, 3).map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="text-xs px-2 py-0"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                        {app.tags.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{app.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                        {app.description}
+                      </p>
+
+                      <div className="flex justify-between items-center mt-auto">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleLike(app.id, app.isLiked);
+                            }}
+                            className={app.isLiked ? "text-red-500" : ""}
+                          >
+                            <Heart
+                              className={`h-4 w-4 mr-1 ${
+                                app.isLiked ? "fill-current" : ""
+                              }`}
+                            />
+                            <span className="text-xs">{app.likes}</span>
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(app.url, "_blank");
+                          }}
+                          className="text-xs"
+                        >
+                          Visit <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </Link>
           ))}
         </div>

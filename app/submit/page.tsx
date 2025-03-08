@@ -26,45 +26,82 @@ export default function SubmitPage() {
         description: "You must be logged in to submit an application",
         variant: "destructive",
       });
-      router.push("/login");
       return;
     }
 
     setIsSubmitting(true);
-    const form = e.currentTarget;
-    const formData = new FormData(form);
 
     try {
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+
+      // Process tags
       const tags =
         formData
           .get("tags")
           ?.toString()
           .split(",")
-          .map((tag) => tag.trim()) || [];
+          .map((tag) => tag.trim())
+          .filter(Boolean) || [];
 
-      const { error } = await supabase.from("applications").insert({
-        title: formData.get("title"),
-        description: formData.get("description"),
-        url: formData.get("url"),
-        screenshot_url: formData.get("screenshot"),
-        tags,
-        creator_id: profile.id,
-        status: "pending",
-        // comments_enabled: formData.get("comments_enabled") === "on",
-        comments_enabled: true,
-      });
+      // Create the application
+      const { data: app, error } = await supabase
+        .from("applications")
+        .insert({
+          title: formData.get("title"),
+          description: formData.get("description"),
+          url: formData.get("url"),
+          screenshot_url: formData.get("screenshot"),
+          tags,
+          creator_id: profile.id,
+          comments_enabled: true,
+          status: "pending",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Get all admin users
+      const { data: admins, error: adminError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin");
+
+      if (adminError) throw adminError;
+
+      // Create notifications for all admins
+      if (admins && admins.length > 0) {
+        const adminNotifications = admins.map((admin) => ({
+          user_id: admin.id,
+          title: "New Application Submission",
+          message: `${profile.user_id} submitted "${formData.get(
+            "title"
+          )}" for review`,
+          application_id: app.id,
+          type: "submission",
+          action_user_id: profile.id,
+          read: false,
+        }));
+
+        const { error: notificationError } = await supabase
+          .from("notifications")
+          .insert(adminNotifications);
+
+        if (notificationError) throw notificationError;
+      }
 
       toast({
         title: "Success",
         description: "Your application has been submitted for review",
       });
+
       router.push("/profile");
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error submitting application:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to submit application",
         variant: "destructive",
       });
     } finally {

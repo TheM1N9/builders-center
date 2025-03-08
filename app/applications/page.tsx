@@ -105,33 +105,75 @@ export default function ApplicationsPage() {
     }
 
     try {
-      if (isLiked) {
-        // Unlike
-        await supabase
+      // Get the application details first
+      const { data: application, error: appError } = await supabase
+        .from("applications")
+        .select("title, creator_id")
+        .eq("id", id)
+        .single();
+
+      if (appError) throw appError;
+
+      // Check if user is the creator
+      const isOwnApplication = application.creator_id === profile.id;
+
+      if (!isLiked) {
+        // Add like
+        const { error: likeError } = await supabase
+          .from("likes")
+          .insert({ application_id: id, user_id: profile.id });
+
+        if (likeError) throw likeError;
+
+        // Only create notification if not liking own application
+        if (!isOwnApplication) {
+          const { data: existingNotification } = await supabase
+            .from("notifications")
+            .select()
+            .eq("user_id", application.creator_id)
+            .eq("type", "like")
+            .eq("application_id", id)
+            .eq("action_user_id", profile.id)
+            .single();
+
+          if (!existingNotification) {
+            const { error: notificationError } = await supabase
+              .from("notifications")
+              .insert({
+                user_id: application.creator_id,
+                type: "like",
+                title: "New Like",
+                message: `${profile.user_id} liked your application "${application.title}"`,
+                application_id: id,
+                action_user_id: profile.id,
+                read: false,
+              });
+
+            if (notificationError) throw notificationError;
+          }
+        }
+      } else {
+        // Remove like
+        const { error } = await supabase
           .from("likes")
           .delete()
           .eq("application_id", id)
           .eq("user_id", profile.id);
-      } else {
-        // Like
-        await supabase.from("likes").insert({
-          application_id: id,
-          user_id: profile.id,
-        });
+
+        if (error) throw error;
       }
 
       // Update local state
       setApplications(
-        applications.map((app) => {
-          if (app.id === id) {
-            return {
-              ...app,
-              likes: isLiked ? app.likes - 1 : app.likes + 1,
-              isLiked: !isLiked,
-            };
-          }
-          return app;
-        })
+        applications.map((app) =>
+          app.id === id
+            ? {
+                ...app,
+                likes: isLiked ? app.likes - 1 : app.likes + 1,
+                isLiked: !isLiked,
+              }
+            : app
+        )
       );
     } catch (error) {
       console.error("Error updating like:", error);

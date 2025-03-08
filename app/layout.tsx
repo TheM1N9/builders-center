@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "@/components/providers";
+import { NotificationsProvider } from "@/contexts/notifications-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,14 +31,16 @@ export default function RootLayout({
         <Providers session={session}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <AuthProvider>
-              <SiteHeader />
-              <main className="flex-1">
-                <SpeedInsights />
-                {children}
-                <Analytics />
-              </main>
-              <SiteFooter />
-              <Toaster />
+              <NotificationsProvider>
+                <SiteHeader />
+                <main className="flex-1">
+                  <SpeedInsights />
+                  {children}
+                  <Analytics />
+                </main>
+                <SiteFooter />
+                <Toaster />
+              </NotificationsProvider>
             </AuthProvider>
           </ThemeProvider>
         </Providers>
