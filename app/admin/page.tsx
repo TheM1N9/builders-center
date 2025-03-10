@@ -25,7 +25,11 @@ import { useNotifications } from "@/contexts/notifications-context";
 // export type AdminRole = 'admin' | 'user';
 
 // Add this type if not already in your types/index.ts
-type ApplicationStatus = "pending" | "approved" | "rejected";
+type ApplicationStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "review_requested";
 
 type AdminApplication = Application & {
   likes: number;
@@ -209,6 +213,7 @@ export default function AdminPage() {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="review_requested">Review Requested</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
@@ -245,7 +250,8 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="flex items-start gap-2">
-                        {statusFilter === "pending" && (
+                        {(statusFilter === "pending" ||
+                          statusFilter === "review_requested") && (
                           <>
                             <Button
                               size="sm"

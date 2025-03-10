@@ -129,7 +129,7 @@ export default function EditApplicationPage() {
         .from("applications")
         .delete()
         .eq("id", id)
-        .eq("creator_id", user?.id);
+        .eq("creator_id", profile?.id);
 
       if (error) throw error;
 

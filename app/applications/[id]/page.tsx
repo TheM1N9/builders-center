@@ -102,6 +102,7 @@ type ApplicationWithDetails = Application & {
   comments: Comment[];
   comments_enabled: boolean;
   review_requested_at?: string | null;
+  status: "pending" | "approved" | "rejected" | "review_requested";
 };
 
 export default function ApplicationPage() {
@@ -480,16 +481,44 @@ export default function ApplicationPage() {
     if (!isUserCreator || !profile) return;
 
     try {
+      // Update application status
       const { error } = await supabase
         .from("applications")
         .update({
           review_requested_at: new Date().toISOString(),
-          status: "pending",
+          status: "review_requested",
         })
         .eq("id", id)
         .eq("creator_id", profile.id);
 
       if (error) throw error;
+
+      // Get all admin users
+      const { data: admins, error: adminsError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "admin");
+
+      if (adminsError) throw adminsError;
+
+      // Create notifications for all admins
+      if (admins && admins.length > 0) {
+        const notifications = admins.map((admin) => ({
+          user_id: admin.id,
+          type: "review_request",
+          title: "Review Request",
+          message: `${profile.user_id} has requested a review for "${application?.title}"`,
+          application_id: id,
+          action_user_id: profile.id,
+          read: false,
+        }));
+
+        const { error: notificationError } = await supabase
+          .from("notifications")
+          .insert(notifications);
+
+        if (notificationError) throw notificationError;
+      }
 
       toast({
         title: "Success",
@@ -632,13 +661,17 @@ export default function ApplicationPage() {
               className={`p-2 text-center text-sm ${
                 application?.status === "pending"
                   ? "bg-yellow-500/10 text-yellow-500"
-                  : "bg-destructive/10 text-destructive"
+                  : application?.status === "rejected"
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-blue-500/10 text-blue-500"
               }`}
             >
               {isAdmin ? "(Admin View) " : ""}
               {application?.status === "pending"
                 ? "This application is pending approval"
-                : "This application has been rejected"}
+                : application?.status === "rejected"
+                ? "This application has been rejected"
+                : "This application is awaiting re-review"}
             </div>
           )}
 
@@ -704,7 +737,7 @@ export default function ApplicationPage() {
                           <DropdownMenuSeparator />
 
                           <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
+                            className="text-red-500 focus:text-red-500"
                             onClick={() => {
                               document
                                 .getElementById("delete-dialog-trigger")
@@ -920,6 +953,55 @@ export default function ApplicationPage() {
             </p>
           </Card>
         )}
+
+        {/* Add these AlertDialog components before the closing div of the component */}
+        {/* Delete Dialog */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button id="delete-dialog-trigger" className="hidden">
+              Delete
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your
+                application.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Review Request Dialog */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button id="review-dialog-trigger" className="hidden">
+              Request Review
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Request Review</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to request a new review? Your application
+                will be moved back to pending status.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRequestReview}>
+                Request Review
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
