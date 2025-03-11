@@ -32,7 +32,7 @@ type ApplicationStatus =
   | "review_requested";
 
 type AdminApplication = Application & {
-  likes: number;
+  stars: number;
   creator_user_id?: string;
 };
 

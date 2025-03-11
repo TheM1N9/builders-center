@@ -17,6 +17,7 @@ import {
   Check,
   RefreshCw,
   Heart,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
@@ -45,27 +46,19 @@ type Profile = {
   public_email: boolean;
 };
 
-type ProfileApplication = Application & {
-  likes: number;
-  isLiked: boolean;
+type ApplicationWithProfile = Application & {
+  stars: number;
+  isStarred: boolean;
   creator_user_id?: string;
 };
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
   const [myProfile, setMyProfile] = useState<Profile | null>(null);
-  const [myApplications, setMyApplications] = useState<ProfileApplication[]>(
+  const [applications, setApplications] = useState<ApplicationWithProfile[]>(
     []
   );
-  const [likedApplications, setLikedApplications] = useState<
-    ProfileApplication[]
-  >([]);
-  const [commentedApplications, setCommentedApplications] = useState<
-    ProfileApplication[]
-  >([]);
-  const [activeTab, setActiveTab] = useState<"my" | "liked" | "commented">(
-    "my"
-  );
+  const [starredApps, setStarredApps] = useState<ApplicationWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -89,21 +82,14 @@ export default function ProfilePage() {
     if (!profile?.id) return;
 
     try {
-      // Fetch user's likes first to get the liked application IDs
-      const { data: userLikes } = await supabase
-        .from("likes")
-        .select("application_id")
-        .eq("user_id", profile.id);
-
-      const likedAppIds = userLikes?.map((like) => like.application_id) || [];
-
       // Fetch user's applications
       const { data: apps, error: appsError } = await supabase
         .from("applications")
         .select(
           `
           *,
-          likes(count)
+          stars(count),
+          creator:profiles!creator_id(user_id)
         `
         )
         .eq("creator_id", profile.id)
@@ -111,78 +97,52 @@ export default function ProfilePage() {
 
       if (appsError) throw appsError;
 
+      // Get user's star status
+      let userStars: string[] = [];
+      if (profile.id) {
+        const { data: stars } = await supabase
+          .from("stars")
+          .select("application_id")
+          .eq("user_id", profile.id);
+
+        userStars = stars?.map((star) => star.application_id) || [];
+      }
+
       const formattedApps = apps.map((app: any) => ({
         ...app,
-        likes: app.likes[0]?.count || 0,
-        isLiked: likedAppIds.includes(app.id),
+        stars: app.stars[0]?.count || 0,
+        isStarred: userStars.includes(app.id),
         creator_user_id: app.creator?.user_id,
       }));
 
-      setMyApplications(formattedApps);
+      setApplications(formattedApps);
 
-      // Fetch liked applications
-      const { data: likes, error: likesError } = await supabase
-        .from("likes")
+      // Fetch starred applications
+      const { data: starredApps, error: starredError } = await supabase
+        .from("stars")
         .select(
           `
-          application_id,
-          application:applications(
+          application:applications (
             *,
-            likes(count),
+            stars(count),
             creator:profiles!creator_id(user_id)
           )
         `
         )
         .eq("user_id", profile.id);
 
-      if (likesError) throw likesError;
+      if (starredError) throw starredError;
 
-      const formattedLikes = likes
-        .filter((like: any) => like.application)
-        .map((like: any) => ({
-          ...like.application,
-          likes: like.application.likes[0]?.count || 0,
-          creator_user_id: like.application.creator?.user_id,
-          isLiked: true,
-        }));
+      const formattedStarredApps = starredApps
+        ?.map((star: any) => ({
+          ...star.application,
+          stars: star.application.stars[0]?.count || 0,
+          isStarred: true,
+          creator_user_id: star.application.creator?.user_id,
+        }))
+        .filter((app: any) => app.id); // Filter out any null applications
 
-      setLikedApplications(formattedLikes);
-
-      // Fetch commented applications
-      const { data: comments, error: commentsError } = await supabase
-        .from("comments")
-        .select(
-          `
-          application_id,
-          application:applications(
-            *,
-            likes(count),
-            creator:profiles!creator_id(user_id)
-          )
-        `
-        )
-        .eq("user_id", profile.id);
-
-      if (commentsError) throw commentsError;
-
-      // Filter out duplicates by application_id and add isLiked property
-      const uniqueApps = Array.from(
-        new Map(
-          comments
-            .filter((comment: any) => comment.application)
-            .map((comment: any) => [
-              comment.application.id,
-              {
-                ...comment.application,
-                likes: comment.application.likes[0]?.count || 0,
-                creator_user_id: comment.application.creator?.user_id,
-                isLiked: likedAppIds.includes(comment.application.id),
-              },
-            ])
-        ).values()
-      );
-
-      setCommentedApplications(uniqueApps);
+      setStarredApps(formattedStarredApps);
     } catch (error) {
       console.error("Error fetching user data:", error);
       toast({
@@ -250,7 +210,8 @@ export default function ProfilePage() {
 
       if (error) throw error;
 
-      setMyApplications(myApplications.filter((app) => app.id !== id));
+      setApplications(applications.filter((app) => app.id !== id));
+      setStarredApps(starredApps.filter((app) => app.id !== id));
       setDeletingId(null);
       toast({
         title: "Success",
@@ -271,68 +232,27 @@ export default function ProfilePage() {
     setEditedPublicEmail(checked);
   };
 
-  const handleLike = async (id: string, isLiked: boolean) => {
+  const handleStar = async (id: string, isStarred: boolean) => {
     if (!user || !profile) {
       toast({
         title: "Authentication required",
-        description: "Please sign in to like applications",
+        description: "Please sign in to star applications",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Get the application details first
-      const { data: application, error: appError } = await supabase
-        .from("applications")
-        .select("title, creator_id")
-        .eq("id", id)
-        .single();
+      if (!isStarred) {
+        const { error: starError } = await supabase.from("stars").insert({
+          application_id: id,
+          user_id: profile.id,
+        });
 
-      if (appError) throw appError;
-
-      // Check if user is the creator
-      const isOwnApplication = application.creator_id === profile.id;
-
-      if (!isLiked) {
-        // Add like
-        const { error: likeError } = await supabase
-          .from("likes")
-          .insert({ application_id: id, user_id: profile.id });
-
-        if (likeError) throw likeError;
-
-        // Only create notification if not liking own application
-        if (!isOwnApplication) {
-          const { data: existingNotification } = await supabase
-            .from("notifications")
-            .select()
-            .eq("user_id", application.creator_id)
-            .eq("type", "like")
-            .eq("application_id", id)
-            .eq("action_user_id", profile.id)
-            .single();
-
-          if (!existingNotification) {
-            const { error: notificationError } = await supabase
-              .from("notifications")
-              .insert({
-                user_id: application.creator_id,
-                type: "like",
-                title: "New Like",
-                message: `${profile.user_id} liked your application "${application.title}"`,
-                application_id: id,
-                action_user_id: profile.id,
-                read: false,
-              });
-
-            if (notificationError) throw notificationError;
-          }
-        }
+        if (starError) throw starError;
       } else {
-        // Remove like
         const { error } = await supabase
-          .from("likes")
+          .from("stars")
           .delete()
           .eq("application_id", id)
           .eq("user_id", profile.id);
@@ -340,49 +260,52 @@ export default function ProfilePage() {
         if (error) throw error;
       }
 
-      // Update all relevant states based on active tab
-      if (activeTab === "my") {
-        setMyApplications((apps) =>
-          apps.map((app) =>
-            app.id === id
-              ? {
-                  ...app,
-                  likes: isLiked ? app.likes - 1 : app.likes + 1,
-                  isLiked: !isLiked,
-                }
-              : app
+      // Update both applications and starred apps lists
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === id
+            ? {
+                ...app,
+                stars: isStarred ? app.stars - 1 : app.stars + 1,
+                isStarred: !isStarred,
+              }
+            : app
+        )
+      );
+
+      if (isStarred) {
+        setStarredApps((prev) => prev.filter((app) => app.id !== id));
+      } else {
+        // Fetch the newly starred app to add to starredApps
+        const { data: newStarredApp } = await supabase
+          .from("applications")
+          .select(
+            `
+            *,
+            stars(count),
+            creator:profiles!creator_id(user_id)
+          `
           )
-        );
-      } else if (activeTab === "liked") {
-        setLikedApplications((apps) =>
-          apps.map((app) =>
-            app.id === id
-              ? {
-                  ...app,
-                  likes: isLiked ? app.likes - 1 : app.likes + 1,
-                  isLiked: !isLiked,
-                }
-              : app
-          )
-        );
-      } else if (activeTab === "commented") {
-        setCommentedApplications((apps) =>
-          apps.map((app) =>
-            app.id === id
-              ? {
-                  ...app,
-                  likes: isLiked ? app.likes - 1 : app.likes + 1,
-                  isLiked: !isLiked,
-                }
-              : app
-          )
-        );
+          .eq("id", id)
+          .single();
+
+        if (newStarredApp) {
+          setStarredApps((prev) => [
+            {
+              ...newStarredApp,
+              stars: newStarredApp.stars[0]?.count || 1,
+              isStarred: true,
+              creator_user_id: newStarredApp.creator?.user_id,
+            },
+            ...prev,
+          ]);
+        }
       }
-    } catch (error) {
-      console.error("Error updating like:", error);
+    } catch (error: any) {
+      console.error("Error updating star:", error);
       toast({
         title: "Error",
-        description: "Failed to update like",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -490,219 +413,228 @@ export default function ProfilePage() {
           </div>
         </Card>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-6">
-          <Button
-            variant={activeTab === "my" ? "default" : "outline"}
-            onClick={() => setActiveTab("my")}
-          >
-            My Applications ({myApplications.length})
-          </Button>
-          <Button
-            variant={activeTab === "liked" ? "default" : "outline"}
-            onClick={() => setActiveTab("liked")}
-          >
-            Liked ({likedApplications.length})
-          </Button>
-          <Button
-            variant={activeTab === "commented" ? "default" : "outline"}
-            onClick={() => setActiveTab("commented")}
-          >
-            Commented ({commentedApplications.length})
-          </Button>
-        </div>
-
-        {/* Applications Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {(activeTab === "my"
-            ? myApplications
-            : activeTab === "liked"
-            ? likedApplications
-            : commentedApplications
-          ).map((app) => (
-            <Link
-              href={`/applications/${app.id}`}
-              key={app.id}
-              className="block group"
-            >
-              {activeTab === "my" && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
-                        <Badge
-                          variant={
-                            app.status === "approved" ? "default" : "secondary"
-                          }
-                        >
-                          {app.status}
-                        </Badge>
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">My Applications</h2>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="p-4">
+                  <div className="h-[200px] w-full bg-muted animate-pulse rounded-lg mb-4" />
+                  <div className="h-4 w-3/4 bg-muted animate-pulse mb-2" />
+                  <div className="h-4 w-1/2 bg-muted animate-pulse" />
+                </Card>
+              ))}
+            </div>
+          ) : applications.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12">
+              You haven't submitted any applications yet.{" "}
+              <Link href="/submit" className="text-primary hover:underline">
+                Submit your first application
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {applications.map((app) => (
+                <Link
+                  href={`/applications/${app.id}`}
+                  key={app.id}
+                  className="block group"
+                >
+                  <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                    <div className="flex flex-col h-full">
+                      <div className="relative w-full aspect-square max-h-[200px]">
+                        <Image
+                          src={app.screenshot_url}
+                          alt={app.title}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
+                      <div className="p-3 flex flex-col h-[200px]">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                            {app.title}
+                          </p>
                           <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
+                            variant={
+                              app.status === "approved"
+                                ? "default"
+                                : app.status === "pending"
+                                ? "secondary"
+                                : app.status === "rejected"
+                                ? "destructive"
+                                : "outline"
+                            }
+                            className="text-xs"
                           >
-                            {tag}
+                            {app.status === "review_requested"
+                              ? "Review Requested"
+                              : app.status.charAt(0).toUpperCase() +
+                                app.status.slice(1)}
                           </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
-
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {app.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs px-2 py-0"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {app.tags.length > 3 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{app.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                          {app.description}
+                        </p>
+                        <div className="flex justify-between items-center mt-auto">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleLike(app.id, app.isLiked);
+                              handleStar(app.id, app.isStarred);
                             }}
-                            className={app.isLiked ? "text-red-500" : ""}
+                            className={app.isStarred ? "text-yellow-500" : ""}
                           >
-                            <Heart
+                            <Star
                               className={`h-4 w-4 mr-1 ${
-                                app.isLiked ? "fill-current" : ""
+                                app.isStarred ? "fill-current" : ""
                               }`}
                             />
-                            <span className="text-xs">{app.likes}</span>
+                            <span className="text-xs">{app.stars}</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.open(app.url, "_blank");
+                            }}
+                            className="text-xs"
+                          >
+                            Visit <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(app.url, "_blank");
-                          }}
-                          className="text-xs"
-                        >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              )}
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
 
-              {(activeTab === "liked" || activeTab === "commented") && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
-                        <div className="flex items-center gap-2">
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Starred Applications</h2>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i} className="p-4">
+                  <div className="h-[200px] w-full bg-muted animate-pulse rounded-lg mb-4" />
+                  <div className="h-4 w-3/4 bg-muted animate-pulse mb-2" />
+                  <div className="h-4 w-1/2 bg-muted animate-pulse" />
+                </Card>
+              ))}
+            </div>
+          ) : starredApps.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12">
+              You haven't starred any applications yet.{" "}
+              <Link
+                href="/applications"
+                className="text-primary hover:underline"
+              >
+                Discover applications
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {starredApps.map((app) => (
+                <Link
+                  href={`/applications/${app.id}`}
+                  key={app.id}
+                  className="block group"
+                >
+                  <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                    <div className="flex flex-col h-full">
+                      <div className="relative w-full aspect-square max-h-[200px]">
+                        <Image
+                          src={app.screenshot_url}
+                          alt={app.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-3 flex flex-col h-[200px]">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                            {app.title}
+                          </p>
                           <Link
                             href={`/users/${app.creator_user_id}`}
-                            className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap"
+                            className="text-xs text-muted-foreground hover:text-primary"
                             onClick={(e) => e.stopPropagation()}
                           >
                             @{app.creator_user_id}
                           </Link>
                         </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
-
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {app.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs px-2 py-0"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {app.tags.length > 3 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{app.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                          {app.description}
+                        </p>
+                        <div className="flex justify-between items-center mt-auto">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleLike(app.id, app.isLiked);
+                              handleStar(app.id, app.isStarred);
                             }}
-                            className={app.isLiked ? "text-red-500" : ""}
+                            className="text-yellow-500"
                           >
-                            <Heart
-                              className={`h-4 w-4 mr-1 ${
-                                app.isLiked ? "fill-current" : ""
-                              }`}
-                            />
-                            <span className="text-xs">{app.likes}</span>
+                            <Star className="h-4 w-4 mr-1 fill-current" />
+                            <span className="text-xs">{app.stars}</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.open(app.url, "_blank");
+                            }}
+                            className="text-xs"
+                          >
+                            Visit <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(app.url, "_blank");
-                          }}
-                          className="text-xs"
-                        >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              )}
-            </Link>
-          ))}
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Empty State */}
-        {((activeTab === "my" && myApplications.length === 0) ||
-          (activeTab === "liked" && likedApplications.length === 0) ||
-          (activeTab === "commented" &&
-            commentedApplications.length === 0)) && (
-          <div className="text-center text-muted-foreground py-12">
-            No applications found in this category.
-          </div>
-        )}
       </div>
     </div>
   );

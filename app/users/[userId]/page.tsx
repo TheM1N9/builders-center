@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Heart } from "lucide-react";
+import { ExternalLink, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import type { Application } from "@/types";
@@ -17,7 +17,7 @@ type UserProfile = {
   user_id: string;
   email: string;
   public_email: boolean;
-  applications: (Application & { likes: number })[];
+  applications: (Application & { stars: number })[];
 };
 
 export default function UserProfilePage() {
@@ -50,7 +50,7 @@ export default function UserProfilePage() {
             tags,
             status,
             created_at,
-            likes:likes(count)
+            stars:stars(count)
           )
         `
         )
@@ -64,7 +64,7 @@ export default function UserProfilePage() {
       const formattedApps = (profileData.applications || []).map(
         (app: any) => ({
           ...app,
-          likes: app.likes[0]?.count || 0,
+          stars: app.stars[0]?.count || 0,
         })
       );
 
@@ -195,8 +195,8 @@ export default function UserProfilePage() {
 
                         <div className="flex justify-between items-center mt-auto">
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Heart className="h-4 w-4" />
-                            <span>{app.likes}</span>
+                            <Star className="h-4 w-4" />
+                            <span>{app.stars}</span>
                           </div>
                           <Button
                             size="sm"

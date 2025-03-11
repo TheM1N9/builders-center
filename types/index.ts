@@ -1,4 +1,4 @@
-export type ApplicationStatus = "pending" | "approved" | "rejected"
+export type ApplicationStatus = "pending" | "approved" | "rejected" | "review_requested"
 
 export type Application = {
     id: string
@@ -15,6 +15,8 @@ export type Application = {
         name?: string
         avatar_url?: string
     }
+    stars?: number
+    isStarred?: boolean
 }
 
 export type Like = {
@@ -38,7 +40,7 @@ declare module "next-auth" {
     }
 }
 
-export type NotificationType = 'like' | 'comment' | 'approval' | 'rejection';
+export type NotificationType = 'like' | 'comment' | 'approval' | 'rejection' | 'star';
 
 export type Notification = {
     id: string;

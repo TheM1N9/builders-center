@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Heart } from "lucide-react";
+import { ExternalLink, Heart, Star } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 import { useToast } from "@/components/ui/use-toast";
@@ -14,8 +14,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 type ApplicationWithProfile = Application & {
-  likes: number;
-  isLiked: boolean;
+  stars: number;
+  isStarred: boolean;
   creator_user_id?: string;
   creator?: {
     user_id: string;
@@ -55,7 +55,7 @@ export default function ApplicationsPage() {
         .select(
           `
           *,
-          likes(count),
+          stars(count),
           creator:profiles!creator_id(user_id, role)
         `
         )
@@ -64,20 +64,20 @@ export default function ApplicationsPage() {
 
       if (appsError) throw appsError;
 
-      let userLikes: string[] = [];
+      let userStars: string[] = [];
       if (profile?.id) {
-        const { data: likes } = await supabase
-          .from("likes")
+        const { data: stars } = await supabase
+          .from("stars")
           .select("application_id")
           .eq("user_id", profile.id);
 
-        userLikes = likes?.map((like) => like.application_id) || [];
+        userStars = stars?.map((star) => star.application_id) || [];
       }
 
       const formattedApps = apps?.map((app: any) => ({
         ...app,
-        likes: app.likes[0]?.count || 0,
-        isLiked: userLikes.includes(app.id),
+        stars: app.stars[0]?.count || 0,
+        isStarred: userStars.includes(app.id),
         creator_user_id: app.creator?.user_id,
       }));
 
@@ -94,11 +94,11 @@ export default function ApplicationsPage() {
     }
   };
 
-  const handleLike = async (id: string, isLiked: boolean) => {
+  const handleStar = async (id: string, isStarred: boolean) => {
     if (!user || !profile) {
       toast({
         title: "Authentication required",
-        description: "Please sign in to like applications",
+        description: "Please sign in to star applications",
         variant: "destructive",
       });
       return;
@@ -117,21 +117,21 @@ export default function ApplicationsPage() {
       // Check if user is the creator
       const isOwnApplication = application.creator_id === profile.id;
 
-      if (!isLiked) {
-        // Add like
-        const { error: likeError } = await supabase
-          .from("likes")
+      if (!isStarred) {
+        // Add star
+        const { error: starError } = await supabase
+          .from("stars")
           .insert({ application_id: id, user_id: profile.id });
 
-        if (likeError) throw likeError;
+        if (starError) throw starError;
 
-        // Only create notification if not liking own application
+        // Only create notification if not starring own application
         if (!isOwnApplication) {
           const { data: existingNotification } = await supabase
             .from("notifications")
             .select()
             .eq("user_id", application.creator_id)
-            .eq("type", "like")
+            .eq("type", "star")
             .eq("application_id", id)
             .eq("action_user_id", profile.id)
             .single();
@@ -141,9 +141,9 @@ export default function ApplicationsPage() {
               .from("notifications")
               .insert({
                 user_id: application.creator_id,
-                type: "like",
-                title: "New Like",
-                message: `${profile.user_id} liked your application "${application.title}"`,
+                type: "star",
+                title: "New Star",
+                message: `${profile.user_id} starred your application "${application.title}"`,
                 application_id: id,
                 action_user_id: profile.id,
                 read: false,
@@ -153,9 +153,9 @@ export default function ApplicationsPage() {
           }
         }
       } else {
-        // Remove like
+        // Remove star
         const { error } = await supabase
-          .from("likes")
+          .from("stars")
           .delete()
           .eq("application_id", id)
           .eq("user_id", profile.id);
@@ -169,17 +169,17 @@ export default function ApplicationsPage() {
           app.id === id
             ? {
                 ...app,
-                likes: isLiked ? app.likes - 1 : app.likes + 1,
-                isLiked: !isLiked,
+                stars: isStarred ? app.stars - 1 : app.stars + 1,
+                isStarred: !isStarred,
               }
             : app
         )
       );
     } catch (error) {
-      console.error("Error updating like:", error);
+      console.error("Error updating star:", error);
       toast({
         title: "Error",
-        description: "Failed to update like",
+        description: "Failed to update star",
         variant: "destructive",
       });
     }
@@ -272,16 +272,18 @@ export default function ApplicationsPage() {
                                   size="sm"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    handleLike(app.id, app.isLiked);
+                                    handleStar(app.id, app.isStarred);
                                   }}
-                                  className={app.isLiked ? "text-red-500" : ""}
+                                  className={
+                                    app.isStarred ? "text-yellow-500" : ""
+                                  }
                                 >
-                                  <Heart
+                                  <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isLiked ? "fill-current" : ""
+                                      app.isStarred ? "fill-current" : ""
                                     }`}
                                   />
-                                  <span className="text-xs">{app.likes}</span>
+                                  <span className="text-xs">{app.stars}</span>
                                 </Button>
                                 <Button
                                   size="sm"
@@ -370,16 +372,18 @@ export default function ApplicationsPage() {
                                   size="sm"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    handleLike(app.id, app.isLiked);
+                                    handleStar(app.id, app.isStarred);
                                   }}
-                                  className={app.isLiked ? "text-red-500" : ""}
+                                  className={
+                                    app.isStarred ? "text-yellow-500" : ""
+                                  }
                                 >
-                                  <Heart
+                                  <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isLiked ? "fill-current" : ""
+                                      app.isStarred ? "fill-current" : ""
                                     }`}
                                   />
-                                  <span className="text-xs">{app.likes}</span>
+                                  <span className="text-xs">{app.stars}</span>
                                 </Button>
                                 <Button
                                   size="sm"

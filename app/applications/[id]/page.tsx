@@ -14,6 +14,7 @@ import {
   Trash2,
   Share2,
   MoreVertical,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import type { Application } from "@/types";
@@ -92,8 +93,8 @@ type Comment = {
 };
 
 type ApplicationWithDetails = Application & {
-  likes: number;
-  isLiked: boolean;
+  stars: number;
+  isStarred: boolean;
   creator_user_id?: string;
   creator?: {
     user_id: string;
@@ -149,7 +150,7 @@ export default function ApplicationPage() {
         .select(
           `
           *,
-          likes(count),
+          stars(count),
           creator:profiles!creator_id(user_id, role)
         `
         )
@@ -185,15 +186,15 @@ export default function ApplicationPage() {
       }
 
       // Get user's like status if logged in
-      let isLiked = false;
+      let isStarred = false;
       if (profile) {
-        const { data: likeData } = await supabase
-          .from("likes")
+        const { data: starData } = await supabase
+          .from("stars")
           .select("id")
           .eq("application_id", id)
           .eq("user_id", profile.id)
           .single();
-        isLiked = !!likeData;
+        isStarred = !!starData;
       }
 
       // Updated comment query to include user profile information
@@ -274,8 +275,8 @@ export default function ApplicationPage() {
 
       setApplication({
         ...app,
-        likes: app.likes[0]?.count || 0,
-        isLiked,
+        stars: app.stars[0]?.count || 0,
+        isStarred,
         creator_user_id: app.creator?.user_id,
         comments_enabled: app.comments_enabled,
       });
@@ -292,57 +293,57 @@ export default function ApplicationPage() {
     }
   };
 
-  const handleLike = async () => {
+  const handleStar = async () => {
     if (!profile) {
       toast({
         title: "Authentication required",
-        description: "Please log in to like applications",
+        description: "Please log in to star applications",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Check if the user is trying to like their own application
+      // Check if the user is trying to star their own application
       const isOwnApplication = application?.creator_id === profile.id;
 
-      // First, handle the like/unlike action
-      if (application?.isLiked) {
-        const { error: unlikeError } = await supabase
-          .from("likes")
+      // First, handle the star/unstar action
+      if (application?.isStarred) {
+        const { error: unstarError } = await supabase
+          .from("stars")
           .delete()
           .eq("application_id", id)
           .eq("user_id", profile.id);
 
-        if (unlikeError) throw unlikeError;
+        if (unstarError) throw unstarError;
 
         setApplication((prev) => ({
           ...prev!,
-          likes: prev!.likes - 1,
-          isLiked: false,
+          stars: prev!.stars - 1,
+          isStarred: false,
         }));
       } else {
-        const { error: likeError } = await supabase.from("likes").insert({
+        const { error: starError } = await supabase.from("stars").insert({
           application_id: id,
           user_id: profile.id,
         });
 
-        if (likeError) throw likeError;
+        if (starError) throw starError;
 
         setApplication((prev) => ({
           ...prev!,
-          likes: prev!.likes + 1,
-          isLiked: true,
+          stars: prev!.stars + 1,
+          isStarred: true,
         }));
 
-        // Only create notification if the user is not liking their own application
+        // Only create notification if the user is not starring their own application
         if (!isOwnApplication) {
           // Check for existing notification to prevent duplicates
           const { data: existingNotification } = await supabase
             .from("notifications")
             .select()
             .eq("user_id", application?.creator_id)
-            .eq("type", "like")
+            .eq("type", "star")
             .eq("application_id", id)
             .eq("action_user_id", profile.id)
             .single();
@@ -352,9 +353,9 @@ export default function ApplicationPage() {
               .from("notifications")
               .insert({
                 user_id: application?.creator_id,
-                title: "New Like",
-                message: `${profile.user_id} liked your application "${application?.title}"`,
-                type: "like",
+                title: "New Star",
+                message: `${profile.user_id} starred your application "${application?.title}"`,
+                type: "star",
                 application_id: id,
                 action_user_id: profile.id,
                 read: false,
@@ -365,7 +366,7 @@ export default function ApplicationPage() {
         }
       }
     } catch (error: any) {
-      console.error("Error handling like:", error);
+      console.error("Error handling star:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -798,15 +799,17 @@ export default function ApplicationPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleLike}
-                className={`gap-2 ${application.isLiked ? "text-red-500" : ""}`}
+                onClick={handleStar}
+                className={`gap-2 ${
+                  application.isStarred ? "text-yellow-500" : ""
+                }`}
               >
-                <Heart
+                <Star
                   className={`h-4 w-4 ${
-                    application.isLiked ? "fill-current" : ""
+                    application.isStarred ? "fill-current" : ""
                   }`}
                 />
-                {application.likes}
+                {application.stars}
               </Button>
 
               <div className="flex items-center gap-2">
