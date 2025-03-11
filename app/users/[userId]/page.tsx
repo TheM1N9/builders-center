@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Star } from "lucide-react";
+import { ArrowRight, ExternalLink, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import type { Application } from "@/types";
@@ -166,11 +166,17 @@ export default function UserProfilePage() {
                         />
                       </div>
                       <div className="p-3 flex flex-col h-[200px]">
+                        {/* <div className="flex justify-between items-center mt-auto"> */}
                         <div className="flex justify-between items-start gap-2">
                           <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
                             {app.title}
                           </p>
+                          <div className="flex items-center gap-1 text-sm text-[#75fa8d]">
+                            <Star className="h-4 w-4 fill-[#75fa8d]" />
+                            <span>{app.stars}</span>
+                          </div>
                         </div>
+                        {/* </div> */}
 
                         <div className="flex flex-wrap gap-1 mt-2">
                           {app.tags.slice(0, 3).map((tag) => (
@@ -193,7 +199,16 @@ export default function UserProfilePage() {
                           {app.description}
                         </p>
 
-                        <div className="flex justify-between items-center mt-auto">
+                        <Button
+                          className="w-full mt-auto bg-[#75fa8d]/10 text-[#75fa8d] hover:bg-[#75fa8d]/20"
+                          asChild
+                        >
+                          <Link href={`/applications/${app.id}`}>
+                            View Details <ArrowRight className="w-4 h-4 ml-2" />
+                          </Link>
+                        </Button>
+
+                        {/* <div className="flex justify-between items-center mt-auto">
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Star className="h-4 w-4" />
                             <span>{app.stars}</span>
@@ -209,7 +224,7 @@ export default function UserProfilePage() {
                           >
                             Visit <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </Card>

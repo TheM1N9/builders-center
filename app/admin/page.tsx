@@ -95,7 +95,7 @@ export default function AdminPage() {
         .select(
           `
           *,
-          likes(count),
+          stars(count),
           creator:profiles!creator_id(user_id)
         `
         )
@@ -106,7 +106,7 @@ export default function AdminPage() {
 
       const formattedApps = data.map((app: any) => ({
         ...app,
-        likes: app.likes[0]?.count || 0,
+        stars: app.stars[0]?.count || 0,
         creator_user_id: app.creator?.user_id,
       }));
 

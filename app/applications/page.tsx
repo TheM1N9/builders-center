@@ -252,7 +252,7 @@ export default function ApplicationsPage() {
                                   <Badge
                                     key={tag}
                                     variant="secondary"
-                                    className="text-xs px-2 py-0"
+                                    className="text-xs px-3 py-1"
                                   >
                                     {tag}
                                   </Badge>
@@ -275,12 +275,12 @@ export default function ApplicationsPage() {
                                     handleStar(app.id, app.isStarred);
                                   }}
                                   className={
-                                    app.isStarred ? "text-yellow-500" : ""
+                                    app.isStarred ? "text-[#75fa8d]" : ""
                                   }
                                 >
                                   <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isStarred ? "fill-current" : ""
+                                      app.isStarred ? "fill-[#75fa8d]" : ""
                                     }`}
                                   />
                                   <span className="text-xs">{app.stars}</span>
@@ -352,7 +352,7 @@ export default function ApplicationsPage() {
                                   <Badge
                                     key={tag}
                                     variant="secondary"
-                                    className="text-xs px-2 py-0"
+                                    className="text-xs px-3 py-1"
                                   >
                                     {tag}
                                   </Badge>
@@ -375,12 +375,12 @@ export default function ApplicationsPage() {
                                     handleStar(app.id, app.isStarred);
                                   }}
                                   className={
-                                    app.isStarred ? "text-yellow-500" : ""
+                                    app.isStarred ? "text-[#75fa8d]" : ""
                                   }
                                 >
                                   <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isStarred ? "fill-current" : ""
+                                      app.isStarred ? "fill-[#75fa8d]" : ""
                                     }`}
                                   />
                                   <span className="text-xs">{app.stars}</span>

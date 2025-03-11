@@ -801,12 +801,12 @@ export default function ApplicationPage() {
                 size="sm"
                 onClick={handleStar}
                 className={`gap-2 ${
-                  application.isStarred ? "text-yellow-500" : ""
+                  application.isStarred ? "text-[#75fa8d]" : ""
                 }`}
               >
                 <Star
                   className={`h-4 w-4 ${
-                    application.isStarred ? "fill-current" : ""
+                    application.isStarred ? "fill-[#75fa8d]" : ""
                   }`}
                 />
                 {application.stars}

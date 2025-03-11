@@ -45,7 +45,7 @@ export function SiteHeader() {
                 <nav className="flex flex-col gap-4">
                   <Link
                     href="/"
-                    className="text-lg font-semibold"
+                    className="text-lg font-semibold text-[#75fa8d]"
                     onClick={() => setIsOpen(false)}
                   >
                     Builders Central
@@ -77,7 +77,7 @@ export function SiteHeader() {
               </SheetContent>
             </Sheet>
           </div>
-          <Link href="/" className="text-2xl font-bold">
+          <Link href="/" className="text-2xl font-bold text-[#75fa8d]">
             Builders Central
           </Link>
         </div>
