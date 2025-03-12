@@ -192,7 +192,7 @@ export default function Home() {
                           <span>{app.stars}</span>
                         </div>
                       </div>
-                      <p className="text-muted-foreground mb-4">
+                      <p className="text-muted-foreground mb-4 line-clamp-1 mt-2">
                         {app.description}
                       </p>
 

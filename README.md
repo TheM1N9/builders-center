@@ -37,6 +37,7 @@ Builders Central was created to solve the problem of project discovery and showc
 - [] Search in profile page
 - [] User follow (similar to GitHub)
 - [] Update Application page to support screenshots and videos of the app.
+- [] Search using keywords, act like filters
 
 ---
 
