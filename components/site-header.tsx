@@ -16,11 +16,13 @@ import {
 import { Menu, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export function SiteHeader() {
   const { user } = useAuth();
+  // const { data: session } = useSession();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -81,7 +83,6 @@ export function SiteHeader() {
             Builders Central
           </Link>
         </div>
-
         {/* Right side - Navigation and Actions */}
         <div className="flex items-center gap-4">
           <div className="hidden md:flex">
@@ -89,35 +90,59 @@ export function SiteHeader() {
           </div>
           {user && <NotificationsDropdown />}
           <ThemeToggle />
-
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                  <span className="sr-only">User menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium truncate">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/submit">Submit Application</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600 dark:text-red-400"
-                  onClick={handleLogout}
-                >
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              {/* Direct Profile Link via Avatar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-8 w-8 p-0"
+                onClick={() => router.push("/profile")}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={user?.image || ""}
+                    alt={user?.email || ""}
+                    referrerPolicy="no-referrer"
+                  />
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="sr-only">Go to profile</span>
+              </Button>
+
+              {/* Dropdown Menu for other actions */}
+              {/* <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Menu className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/submit">Submit Application</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 dark:text-red-400"
+                    onClick={handleLogout}
+                  >
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu> */}
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               <Button

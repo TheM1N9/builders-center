@@ -38,6 +38,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { signOut } from "next-auth/react";
 
 type Profile = {
   id?: string;
@@ -50,6 +52,10 @@ type ProfileApplication = Application & {
   stars: number;
   isStarred: boolean;
   creator_user_id?: string;
+};
+
+const handleLogout = async () => {
+  await signOut({ callbackUrl: "/" });
 };
 
 export default function ProfilePage() {
@@ -408,87 +414,101 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        <Card className="mb-8">
-          <div className="p-4">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-2xl font-bold">My Profile</h1>
-              {!isEditing ? (
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-6 bg-card rounded-lg border mb-6">
+          <Avatar className="h-24 w-24">
+            <AvatarImage
+              className="rounded-full"
+              src={user?.image || ""}
+              alt={user?.email || ""}
+              referrerPolicy="no-referrer"
+            />
+            <AvatarFallback>
+              <User className="h-12 w-12" />
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold">
+                {editedUserId || user?.email?.split("@")[0]}
+              </h1>
+              {!isEditing && (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setIsEditing(true)}
                 >
-                  <Pencil className="h-4 w-4" />
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit Profile
                 </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleSaveProfile}
-                    disabled={!editedUserId.trim()}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedUserId(profile?.user_id || "");
-                      setEditedPublicEmail(profile?.public_email || false);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
               )}
             </div>
+            <p className="text-muted-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              {user?.email}
+              {!isEditing && (
+                <Badge
+                  variant={profile?.public_email ? "default" : "secondary"}
+                  className="ml-2"
+                >
+                  {profile?.public_email ? "Public" : "Private"}
+                </Badge>
+              )}
+            </p>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Username */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm">Username</span>
-                </div>
-                {isEditing ? (
-                  <Input
-                    value={editedUserId}
-                    onChange={(e) => setEditedUserId(e.target.value)}
-                    className="h-8"
-                  />
-                ) : (
-                  <p className="font-medium">@{profile?.user_id}</p>
-                )}
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditedUserId(profile?.user_id || "");
+                    setEditedPublicEmail(profile?.public_email || false);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSaveProfile}>
+                  <Save className="h-4 w-4 mr-1" />
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <Button variant="destructive" size="sm" onClick={handleLogout}>
+                Log out
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Edit Profile Form - Moved outside the header */}
+        {isEditing && (
+          <Card className="p-6 mb-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="userId">Username</Label>
+                <Input
+                  id="userId"
+                  value={editedUserId}
+                  onChange={(e) => setEditedUserId(e.target.value)}
+                  placeholder="Enter your username"
+                />
               </div>
-
-              {/* Email */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    <span className="text-sm">Email</span>
-                  </div>
-                  {isEditing ? (
-                    <Switch
-                      checked={editedPublicEmail}
-                      onCheckedChange={handlePublicEmailToggle}
-                      className="scale-75"
-                    />
-                  ) : (
-                    <Badge
-                      variant={profile?.public_email ? "default" : "secondary"}
-                      className="text-xs"
-                    >
-                      {profile?.public_email ? "Public" : "Private"}
-                    </Badge>
-                  )}
-                </div>
-                <p className="font-medium">{profile?.email}</p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="public-email"
+                  checked={editedPublicEmail}
+                  onCheckedChange={setEditedPublicEmail}
+                />
+                <Label htmlFor="public-email">Show email publicly</Label>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">

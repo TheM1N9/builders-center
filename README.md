@@ -33,6 +33,11 @@ Builders Central was created to solve the problem of project discovery and showc
 ### Community Focused
 - **Developer-Centric**: Built by developers, for developers. The platform is tailored to meet the needs of the developer community, providing tools and features that enhance productivity and visibility.
 
+### Upcoming Features
+- [] Search in profile page
+- [] User follow (similar to GitHub)
+- [] Update Application page to support screenshots and videos of the app.
+
 ---
 
 Built with ❤️ for the developer community by [@them1n9](https://github.com/them1n9)

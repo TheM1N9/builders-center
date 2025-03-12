@@ -248,7 +248,7 @@ export default function ApplicationsPage() {
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {app.tags.slice(0, 3).map((tag) => (
+                                {app.tags.slice(0, 2).map((tag) => (
                                   <Badge
                                     key={tag}
                                     variant="secondary"
@@ -259,7 +259,7 @@ export default function ApplicationsPage() {
                                 ))}
                                 {app.tags.length > 3 && (
                                   <span className="text-xs text-muted-foreground">
-                                    +{app.tags.length - 3}
+                                    {/* +{app.tags.length - 3} */}{" "}
                                   </span>
                                 )}
                               </div>
@@ -348,7 +348,7 @@ export default function ApplicationsPage() {
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {app.tags.slice(0, 3).map((tag) => (
+                                {app.tags.slice(0, 2).map((tag) => (
                                   <Badge
                                     key={tag}
                                     variant="secondary"
@@ -359,7 +359,7 @@ export default function ApplicationsPage() {
                                 ))}
                                 {app.tags.length > 3 && (
                                   <span className="text-xs text-muted-foreground">
-                                    +{app.tags.length - 3}
+                                    {/* +{app.tags.length - 3} */}{" "}
                                   </span>
                                 )}
                               </div>
