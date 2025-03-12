@@ -247,31 +247,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeleteApplication = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("applications")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setMyApplications(myApplications.filter((app) => app.id !== id));
-      setDeletingId(null);
-      toast({
-        title: "Success",
-        description: "Application deleted successfully",
-      });
-    } catch (error: any) {
-      console.error("Error deleting application:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   // Add this function to handle the toggle change
   const handlePublicEmailToggle = (checked: boolean) => {
     setEditedPublicEmail(checked);
@@ -479,7 +454,7 @@ export default function ProfilePage() {
               </>
             ) : (
               <Button variant="destructive" size="sm" onClick={handleLogout}>
-                Log out
+                logout
               </Button>
             )}
           </div>

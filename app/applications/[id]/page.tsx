@@ -123,6 +123,7 @@ export default function ApplicationPage() {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [isUserCreator, setIsUserCreator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchApplication();
@@ -538,16 +539,40 @@ export default function ApplicationPage() {
   };
 
   const handleDelete = async () => {
-    if (!isUserCreator || !profile) return;
-
     try {
-      const { error } = await supabase
+      setIsDeleting(true);
+
+      // First, delete all related notifications
+      const { error: notificationsError } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("application_id", id);
+
+      if (notificationsError) throw notificationsError;
+
+      // Then, delete all related stars
+      const { error: starsError } = await supabase
+        .from("stars")
+        .delete()
+        .eq("application_id", id);
+
+      if (starsError) throw starsError;
+
+      // Then, delete all related comments
+      const { error: commentsError } = await supabase
+        .from("comments")
+        .delete()
+        .eq("application_id", id);
+
+      if (commentsError) throw commentsError;
+
+      // Finally, delete the application
+      const { error: applicationError } = await supabase
         .from("applications")
         .delete()
-        .eq("id", id)
-        .eq("creator_id", profile.id);
+        .eq("id", id);
 
-      if (error) throw error;
+      if (applicationError) throw applicationError;
 
       toast({
         title: "Success",
@@ -556,11 +581,14 @@ export default function ApplicationPage() {
 
       router.push("/profile");
     } catch (error: any) {
+      console.error("Error deleting application:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to delete application",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 

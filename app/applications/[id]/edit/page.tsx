@@ -40,6 +40,7 @@ export default function EditApplicationPage() {
   const [loading, setLoading] = useState(true);
   const [application, setApplication] = useState<Application | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (user && profile && id) {
@@ -125,13 +126,39 @@ export default function EditApplicationPage() {
 
   const handleDelete = async () => {
     try {
-      const { error } = await supabase
+      setIsDeleting(true);
+
+      // First, delete all related notifications
+      const { error: notificationsError } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("application_id", id);
+
+      if (notificationsError) throw notificationsError;
+
+      // Then, delete all related stars
+      const { error: starsError } = await supabase
+        .from("stars")
+        .delete()
+        .eq("application_id", id);
+
+      if (starsError) throw starsError;
+
+      // Then, delete all related comments
+      const { error: commentsError } = await supabase
+        .from("comments")
+        .delete()
+        .eq("application_id", id);
+
+      if (commentsError) throw commentsError;
+
+      // Finally, delete the application
+      const { error: applicationError } = await supabase
         .from("applications")
         .delete()
-        .eq("id", id)
-        .eq("creator_id", profile?.id);
+        .eq("id", id);
 
-      if (error) throw error;
+      if (applicationError) throw applicationError;
 
       toast({
         title: "Success",
@@ -140,11 +167,14 @@ export default function EditApplicationPage() {
 
       router.push("/profile");
     } catch (error: any) {
+      console.error("Error deleting application:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to delete application",
         variant: "destructive",
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
