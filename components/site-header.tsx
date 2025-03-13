@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MainNav } from "@/components/main-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,9 +48,17 @@ export function SiteHeader() {
                 <nav className="flex flex-col gap-4">
                   <Link
                     href="/"
-                    className="text-lg font-semibold text-[#75fa8d]"
+                    className="flex items-center gap-2 text-lg font-semibold text-[#75fa8d]"
                     onClick={() => setIsOpen(false)}
                   >
+                    <div className="relative w-6 h-6">
+                      <Image
+                        src="/logo.jpg"
+                        alt="Builders Central Logo"
+                        fill
+                        className="object-contain rounded-full"
+                      />
+                    </div>
                     Builders Central
                   </Link>
                   <Link
@@ -79,8 +88,19 @@ export function SiteHeader() {
               </SheetContent>
             </Sheet>
           </div>
-          <Link href="/" className="text-2xl font-bold text-[#75fa8d]">
-            Builders Central
+          <Link href="/" className="flex items-center gap-2">
+            <div className="relative w-8 h-8 rounded-full">
+              <Image
+                src="/logo.jpg"
+                alt="Builders Central Logo"
+                fill
+                className="object-contain rounded-full"
+                priority
+              />
+            </div>
+            <span className="text-2xl font-bold text-[#75fa8d]">
+              Builders Central
+            </span>
           </Link>
         </div>
         {/* Right side - Navigation and Actions */}

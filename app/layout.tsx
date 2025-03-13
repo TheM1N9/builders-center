@@ -16,6 +16,14 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Builders Central",
   description: "A centralized hub for managing and showcasing web applications",
+  icons: {
+    icon: [
+      {
+        url: "/logo.jpg",
+        href: "/logo.jpg",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
