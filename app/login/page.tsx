@@ -14,8 +14,8 @@ import { FcGoogle } from "react-icons/fc";
 
 export default function LoginPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen p-4">
+      <Card className="w-full max-w-md p-6">
         <CardHeader>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to your account to continue</CardDescription>

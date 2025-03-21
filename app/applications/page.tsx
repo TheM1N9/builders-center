@@ -189,7 +189,7 @@ export default function ApplicationsPage() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="p-4">
                 <div className="h-[200px] w-full bg-muted animate-pulse rounded-lg mb-4" />
@@ -212,7 +212,7 @@ export default function ApplicationsPage() {
             ) && (
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Featured Apps</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                   {filteredApplications
                     .filter((app) => app.creator?.role === "admin")
                     .map((app) => (
@@ -313,7 +313,7 @@ export default function ApplicationsPage() {
             ) && (
               <div>
                 <h2 className="text-2xl font-semibold mb-4">Community Apps</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                   {filteredApplications
                     .filter((app) => app.creator?.role !== "admin")
                     .map((app) => (

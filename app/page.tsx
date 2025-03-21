@@ -103,25 +103,25 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background dark">
+    <div className="min-h-screen bg-background dark p-4 sm:p-6 lg:p-8">
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center wave-bg overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(117,250,141,0.1)_0%,transparent_65%)]" />
         <div className="absolute inset-0 grid-pattern" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-6">
+        <div className="relative max-w-7xl mx-auto text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
             <span className="text-foreground">Welcome to</span>{" "}
             <span className="text-[#75fa8d]">Builders Central</span>
           </h1>
 
-          <p className="mt-6 text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 font-mono">
+          <p className="mt-4 text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 font-mono">
             Showcase your web applications and discover innovative projects from
             developers around the world.
           </p>
 
-          <div className="flex justify-center gap-6">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button
               size="lg"
               className="text-lg px-8 bg-[#75fa8d] hover:bg-[#75fa8d]/90 text-background"
@@ -154,7 +154,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {loading
               ? [...Array(3)].map((_, i) => (
                   <Card
@@ -183,7 +183,7 @@ export default function Home() {
                     </div>
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-semibold mb-2 text-foreground">
+                        <h3 className="text-lg sm:text-xl font-semibold mb-2 text-foreground">
                           {app.title}
                         </h3>
 
@@ -232,7 +232,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           <div className="flex flex-col items-center p-8 rounded-lg bg-[#75fa8d]/5 border border-[#75fa8d]/10 hover:bg-[#75fa8d]/10 transition-colors">
             <Sparkles className="h-12 w-12 text-[#75fa8d] mb-4" />
             <h3 className="text-xl font-semibold text-[#75fa8d] mb-3">
