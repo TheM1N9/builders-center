@@ -139,6 +139,7 @@ export default function SubmitPage() {
                 name="title"
                 placeholder="Enter your application title"
                 required
+                className="w-full"
               />
             </div>
 
@@ -148,7 +149,7 @@ export default function SubmitPage() {
                 id="description"
                 name="description"
                 placeholder="Describe your application..."
-                className="min-h-[100px]"
+                className="min-h-[100px] w-full"
                 required
               />
             </div>
@@ -161,6 +162,7 @@ export default function SubmitPage() {
                 type="url"
                 placeholder="https://your-app.com"
                 required
+                className="w-full"
               />
             </div>
 
@@ -172,6 +174,7 @@ export default function SubmitPage() {
                 type="url"
                 placeholder="https://your-screenshot.com/image.png"
                 required
+                className="w-full"
               />
             </div>
 
@@ -181,6 +184,7 @@ export default function SubmitPage() {
                 id="tags"
                 name="tags"
                 placeholder="react, typescript, web3"
+                className="w-full"
               />
             </div>
 

@@ -194,10 +194,10 @@ export default function EditApplicationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-6 md:p-8 lg:p-10">
       <div className="max-w-2xl mx-auto">
-        <Card className="p-6">
-          <div className="flex justify-between items-center mb-6">
+        <Card className="p-6 md:p-8 lg:p-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <h1 className="text-3xl font-bold">Edit Application</h1>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -232,6 +232,7 @@ export default function EditApplicationPage() {
                 name="title"
                 defaultValue={application.title}
                 required
+                className="w-full"
               />
             </div>
 
@@ -241,7 +242,7 @@ export default function EditApplicationPage() {
                 id="description"
                 name="description"
                 defaultValue={application.description}
-                className="min-h-[100px]"
+                className="min-h-[100px] w-full"
                 required
               />
             </div>
@@ -254,6 +255,7 @@ export default function EditApplicationPage() {
                 type="url"
                 defaultValue={application.url}
                 required
+                className="w-full"
               />
             </div>
 
@@ -265,6 +267,7 @@ export default function EditApplicationPage() {
                 type="url"
                 defaultValue={application.screenshot_url}
                 required
+                className="w-full"
               />
             </div>
 
@@ -274,6 +277,7 @@ export default function EditApplicationPage() {
                 id="tags"
                 name="tags"
                 defaultValue={application.tags.join(", ")}
+                className="w-full"
               />
             </div>
 
@@ -287,16 +291,16 @@ export default function EditApplicationPage() {
               />
             </div> */}
 
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className="w-full md:w-auto"
                 onClick={() => router.push("/profile")}
               >
                 Cancel
               </Button>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full md:w-auto" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </div>

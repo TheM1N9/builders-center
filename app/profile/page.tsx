@@ -454,7 +454,7 @@ export default function ProfilePage() {
               </>
             ) : (
               <Button variant="destructive" size="sm" onClick={handleLogout}>
-                logout
+                Logout
               </Button>
             )}
           </div>
@@ -471,6 +471,7 @@ export default function ProfilePage() {
                   value={editedUserId}
                   onChange={(e) => setEditedUserId(e.target.value)}
                   placeholder="Enter your username"
+                  className="w-full"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -508,7 +509,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Applications Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {(activeTab === "my"
             ? myApplications
             : activeTab === "liked"
@@ -520,171 +521,85 @@ export default function ProfilePage() {
               key={app.id}
               className="block group"
             >
-              {activeTab === "my" && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
+              <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                <div className="flex flex-col h-full">
+                  <div className="relative w-full aspect-square max-h-[200px]">
+                    <Image
+                      src={app.screenshot_url}
+                      alt={app.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-3 flex flex-col h-[200px]">
+                    <div className="flex justify-between items-start gap-2">
+                      <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                        {app.title}
+                      </p>
+                      <Badge
+                        variant={
+                          app.status === "approved" ? "default" : "secondary"
+                        }
+                      >
+                        {app.status}
+                      </Badge>
                     </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
+
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {app.tags.slice(0, 3).map((tag) => (
                         <Badge
-                          variant={
-                            app.status === "approved" ? "default" : "secondary"
-                          }
+                          key={tag}
+                          variant="secondary"
+                          className="text-xs px-2 py-0"
                         >
-                          {app.status}
+                          {tag}
                         </Badge>
-                      </div>
+                      ))}
+                      {app.tags.length > 3 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{app.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
 
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                      {app.description}
+                    </p>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
-
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleStar(app.id, app.isStarred);
-                            }}
-                            className={app.isStarred ? "text-[#75fa8d]" : ""}
-                          >
-                            <Star
-                              className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#75fa8d]" : ""
-                              }`}
-                            />
-                            <span className="text-xs">{app.stars}</span>
-                          </Button>
-                        </div>
+                    <div className="flex justify-between items-center mt-auto">
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Button
+                          variant="ghost"
                           size="sm"
-                          variant="outline"
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(app.url, "_blank");
+                            handleStar(app.id, app.isStarred);
                           }}
-                          className="text-xs"
+                          className={app.isStarred ? "text-[#75fa8d]" : ""}
                         >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
+                          <Star
+                            className={`h-4 w-4 mr-1 ${
+                              app.isStarred ? "fill-[#75fa8d]" : ""
+                            }`}
+                          />
+                          <span className="text-xs">{app.stars}</span>
                         </Button>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.open(app.url, "_blank");
+                        }}
+                        className="text-xs"
+                      >
+                        Visit <ExternalLink className="ml-1 h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
-                </Card>
-              )}
-
-              {(activeTab === "liked" || activeTab === "commented") && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/users/${app.creator_user_id}`}
-                            className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            @{app.creator_user_id}
-                          </Link>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
-
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handleStar(app.id, app.isStarred);
-                            }}
-                            className={app.isStarred ? "text-[#75fa8d]" : ""}
-                          >
-                            <Star
-                              className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#75fa8d]" : ""
-                              }`}
-                            />
-                            <span className="text-xs">{app.stars}</span>
-                          </Button>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(app.url, "_blank");
-                          }}
-                          className="text-xs"
-                        >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )}
+                </div>
+              </Card>
             </Link>
           ))}
         </div>

@@ -76,6 +76,7 @@ export default function RegisterPage() {
               required
               pattern="^[a-z0-9_-]{3,16}$"
               title="User ID must be between 3-16 characters and can only contain lowercase letters, numbers, underscores, and hyphens"
+              className="w-full"
             />
             <p className="text-xs text-muted-foreground">
               This will be your unique identifier. Use only lowercase letters,
@@ -92,6 +93,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className="w-full"
             />
           </div>
 
@@ -104,6 +106,7 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
+              className="w-full"
             />
           </div>
 
