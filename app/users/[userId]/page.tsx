@@ -120,7 +120,7 @@ export default function UserProfilePage() {
         {/* Profile Card */}
         <Card className="mb-8">
           <div className="p-6">
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col md:flex-row justify-between items-start">
               <div>
                 <h1 className="text-2xl font-bold">@{profile.user_id}</h1>
                 {profile.public_email && (
@@ -148,7 +148,7 @@ export default function UserProfilePage() {
               </p>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {profile.applications.map((app) => (
                 <Link
                   href={`/applications/${app.id}`}
@@ -166,7 +166,6 @@ export default function UserProfilePage() {
                         />
                       </div>
                       <div className="p-3 flex flex-col h-[200px]">
-                        {/* <div className="flex justify-between items-center mt-auto"> */}
                         <div className="flex justify-between items-start gap-2">
                           <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
                             {app.title}
@@ -176,7 +175,6 @@ export default function UserProfilePage() {
                             <span>{app.stars}</span>
                           </div>
                         </div>
-                        {/* </div> */}
 
                         <div className="flex flex-wrap gap-1 mt-2">
                           {app.tags.slice(0, 3).map((tag) => (
@@ -207,24 +205,6 @@ export default function UserProfilePage() {
                             View Details <ArrowRight className="w-4 h-4 ml-2" />
                           </Link>
                         </Button>
-
-                        {/* <div className="flex justify-between items-center mt-auto">
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Star className="h-4 w-4" />
-                            <span>{app.stars}</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.open(app.url, "_blank");
-                            }}
-                            className="text-xs"
-                          >
-                            Visit <ExternalLink className="ml-1 h-3 w-3" />
-                          </Button>
-                        </div> */}
                       </div>
                     </div>
                   </Card>

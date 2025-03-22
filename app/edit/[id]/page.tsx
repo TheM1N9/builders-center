@@ -144,6 +144,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 name="title"
                 defaultValue={application.title}
                 required
+                className="w-full"
               />
             </div>
 
@@ -153,7 +154,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 id="description"
                 name="description"
                 defaultValue={application.description}
-                className="min-h-[100px]"
+                className="min-h-[100px] w-full"
                 required
               />
             </div>
@@ -166,6 +167,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 type="url"
                 defaultValue={application.url}
                 required
+                className="w-full"
               />
             </div>
 
@@ -177,6 +179,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 type="url"
                 defaultValue={application.screenshot_url}
                 required
+                className="w-full"
               />
             </div>
 
@@ -186,10 +189,11 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 id="tags"
                 name="tags"
                 defaultValue={application.tags.join(", ")}
+                className="w-full"
               />
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4">
               <Button type="submit" className="flex-1" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
@@ -197,6 +201,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/profile")}
+                className="flex-1"
               >
                 Cancel
               </Button>
