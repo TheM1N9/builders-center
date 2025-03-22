@@ -490,18 +490,21 @@ export default function ProfilePage() {
         <div className="flex gap-4 mb-6">
           <Button
             variant={activeTab === "my" ? "default" : "outline"}
+            className={`flex-1 ${activeTab === "my" ? "bg-[#75fa8d] text-white" : "text-[#75fa8d] border-[#75fa8d]"}`}
             onClick={() => setActiveTab("my")}
           >
             My Applications ({myApplications.length})
           </Button>
           <Button
             variant={activeTab === "liked" ? "default" : "outline"}
+            className={`flex-1 ${activeTab === "liked" ? "bg-[#75fa8d] text-white" : "text-[#75fa8d] border-[#75fa8d]"}`}
             onClick={() => setActiveTab("liked")}
           >
             Starred ({likedApplications.length})
           </Button>
           <Button
             variant={activeTab === "commented" ? "default" : "outline"}
+            className={`flex-1 ${activeTab === "commented" ? "bg-[#75fa8d] text-white" : "text-[#75fa8d] border-[#75fa8d]"}`}
             onClick={() => setActiveTab("commented")}
           >
             Commented ({commentedApplications.length})
