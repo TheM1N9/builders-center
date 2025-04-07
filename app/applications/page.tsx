@@ -221,7 +221,7 @@ export default function ApplicationsPage() {
                         key={app.id}
                         className="block group"
                       >
-                        <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                        <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02]">
                           <div className="flex flex-col h-full">
                             <div className="relative w-full aspect-square max-h-[200px]">
                               <Image
@@ -322,7 +322,7 @@ export default function ApplicationsPage() {
                         key={app.id}
                         className="block group"
                       >
-                        <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                        <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02]">
                           <div className="flex flex-col h-full">
                             <div className="relative w-full aspect-square max-h-[200px]">
                               <Image
