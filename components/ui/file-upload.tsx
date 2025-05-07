@@ -120,11 +120,21 @@ export function FileUpload({
       <Label>Application Screenshot</Label>
       <div className="flex flex-col gap-4">
         {previewUrl ? (
-          <div className="relative">
+          <div
+            className="relative flex justify-center items-center bg-muted rounded-lg"
+            style={{ minHeight: 120, minWidth: 120 }}
+          >
             <img
               src={previewUrl}
               alt="Preview"
-              className="w-full h-48 object-cover rounded-lg"
+              style={{
+                maxWidth: "100%",
+                maxHeight: 200,
+                height: "auto",
+                width: "auto",
+                display: "block",
+              }}
+              className="rounded-lg"
             />
             <Button
               type="button"

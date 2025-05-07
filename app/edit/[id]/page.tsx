@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import type { Application } from "@/types";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
 
 export default function EditPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
@@ -163,25 +164,19 @@ export default function EditPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">
-                Description (Markdown supported)
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="description">Description</Label>
+                <MarkdownHelp />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="min-h-[200px]"
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Supports: <code>**bold**</code>, <code>*italic*</code>,{" "}
-                    <code>[links](url)</code>, <code># headings</code>,{" "}
-                    <code>- lists</code>
-                  </p>
-                </div>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[200px]"
+                  required
+                />
                 <div className="border rounded-md p-4">
                   <h3 className="text-sm font-medium mb-2">Preview</h3>
                   <MarkdownPreview content={description} />

@@ -42,6 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
+import { Label } from "@/components/ui/label";
 // import { CommentSection } from "@/components/comment-section";
 
 type Reply = {
@@ -876,18 +878,19 @@ export default function ApplicationPage() {
               <form onSubmit={handleSubmitComment} className="mb-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="comment">Write a comment</Label>
+                      <MarkdownHelp />
+                    </div>
                     <Textarea
-                      placeholder="Write a comment... (Markdown supported)"
+                      id="comment"
+                      placeholder="Write a comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       required
                       className="min-h-[100px]"
                     />
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-muted-foreground">
-                        Supports: <code>**bold**</code>, <code>*italic*</code>,{" "}
-                        <code>[links](url)</code>
-                      </p>
+                    <div className="flex items-center justify-end">
                       <Button
                         type="button"
                         variant="ghost"
@@ -965,18 +968,21 @@ export default function ApplicationPage() {
                       >
                         <div className="space-y-4">
                           <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`reply-${comment.id}`}>
+                                Write a reply
+                              </Label>
+                              <MarkdownHelp />
+                            </div>
                             <Textarea
-                              placeholder="Write a reply... (Markdown supported)"
+                              id={`reply-${comment.id}`}
+                              placeholder="Write a reply..."
                               value={replyContent}
                               onChange={(e) => setReplyContent(e.target.value)}
                               required
                               className="min-h-[100px]"
                             />
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm text-muted-foreground">
-                                Supports: <code>**bold**</code>,{" "}
-                                <code>*italic*</code>, <code>[links](url)</code>
-                              </p>
+                            <div className="flex items-center justify-end">
                               <Button
                                 type="button"
                                 variant="ghost"
