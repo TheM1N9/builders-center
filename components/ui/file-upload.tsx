@@ -117,7 +117,7 @@ export function FileUpload({
 
   return (
     <div className="space-y-2">
-      <Label>Application Screenshot</Label>
+      <Label>Application Logo</Label>
       <div className="flex flex-col gap-4">
         {previewUrl ? (
           <div
