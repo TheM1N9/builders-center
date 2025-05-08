@@ -62,6 +62,16 @@ export function FileUpload({
 
       // Create a unique file name with user ID to ensure uniqueness
       const fileExt = file.name.split(".").pop();
+      // Validate extension is safe
+      const safeExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      if (!fileExt || !safeExtensions.includes(fileExt.toLowerCase())) {
+        toast({
+          title: "Error",
+          description: "Invalid file extension. Please upload a valid image file.",
+          variant: "destructive",
+        });
+        return;
+      }
       const fileName = `${user.id}/${Math.random()
         .toString(36)
         .substring(2)}.${fileExt}`;
