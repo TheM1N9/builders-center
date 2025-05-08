@@ -103,7 +103,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background dark">
+    <div className="min-h-screen bg-white dark:bg-background">
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center wave-bg overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />

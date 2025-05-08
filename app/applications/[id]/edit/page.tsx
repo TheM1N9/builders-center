@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/ui/file-upload";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
 
 type Application = {
   title: string;
@@ -41,6 +43,8 @@ export default function EditApplicationPage() {
   const [application, setApplication] = useState<Application | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (user && profile && id) {
@@ -64,6 +68,8 @@ export default function EditApplicationPage() {
       }
 
       setApplication(data);
+      setScreenshotUrl(data.screenshot_url);
+      setDescription(data.description);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -79,6 +85,15 @@ export default function EditApplicationPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user || !profile || !application) return;
+
+    if (!screenshotUrl) {
+      toast({
+        title: "Error",
+        description: "Please upload a screenshot of your application",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     const form = e.currentTarget;
@@ -98,9 +113,8 @@ export default function EditApplicationPage() {
           title: formData.get("title"),
           description: formData.get("description"),
           url: formData.get("url"),
-          screenshot_url: formData.get("screenshot"),
+          screenshot_url: screenshotUrl,
           tags,
-          // comments_enabled: formData.get("comments_enabled") === "on",
           comments_enabled: true,
         })
         .eq("id", id)
@@ -236,14 +250,24 @@ export default function EditApplicationPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={application.description}
-                className="min-h-[100px]"
-                required
-              />
+              <div className="flex items-center gap-2">
+                <Label htmlFor="description">Description</Label>
+                <MarkdownHelp />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[200px]"
+                  required
+                />
+                <div className="border rounded-md p-4">
+                  <h3 className="text-sm font-medium mb-2">Preview</h3>
+                  <MarkdownPreview content={description} />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -257,16 +281,11 @@ export default function EditApplicationPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="screenshot">Screenshot URL</Label>
-              <Input
-                id="screenshot"
-                name="screenshot"
-                type="url"
-                defaultValue={application.screenshot_url}
-                required
-              />
-            </div>
+            <FileUpload
+              onUploadComplete={setScreenshotUrl}
+              currentUrl={application.screenshot_url}
+              folder={`applications/${id}`}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="tags">Tags (comma separated)</Label>
@@ -276,16 +295,6 @@ export default function EditApplicationPage() {
                 defaultValue={application.tags.join(", ")}
               />
             </div>
-
-            {/* never enable comments and remove this */}
-            {/* <div className="flex items-center justify-between space-x-2">
-              <Label htmlFor="comments_enabled">Enable Comments</Label>
-              <Switch
-                id="comments_enabled"
-                name="comments_enabled"
-                defaultChecked={application.comments_enabled}
-              />
-            </div> */}
 
             <div className="flex gap-4">
               <Button
