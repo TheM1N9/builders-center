@@ -1,8 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
-import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type AuthContextType = {
@@ -18,31 +16,97 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
-  const [profile, setProfile] = useState(null);
-  const loading = status === "loading";
-  const user = session?.user || null;
+  const [user, setUser] = useState<any | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchProfile() {
-      if (!user?.email) return;
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      }
+    );
 
-      try {
-        const { data, error } = await supabase
+    // Initial check
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    async function ensureProfile() {
+      if (!user) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      // 1. Check for a profile with the current UID
+      let { data: existing, error: fetchError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      // 2. If not found, check for a profile with the same email (old UUID)
+      if (!existing) {
+        const { data: oldProfile } = await supabase
           .from("profiles")
           .select("*")
           .eq("email", user.email)
           .single();
 
-        if (!error && data) {
-          setProfile(data);
+        if (oldProfile) {
+          // 3. Migrate: update the id to the new UID
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ id: user.id })
+            .eq("email", user.email);
+
+          if (updateError) {
+            console.error("Error migrating profile:", updateError);
+          } else {
+            existing = { ...oldProfile, id: user.id };
+          }
+        } else {
+          // 4. If no profile, create a new one
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: user.id,
+              email: user.email,
+              user_id: user.user_metadata?.user_id || user.email?.split("@")[0],
+              role: "user",
+              public_email: true,
+            });
+          if (insertError) {
+            console.error("Error creating profile:", insertError);
+          } else {
+            existing = {
+              id: user.id,
+              email: user.email,
+              user_id: user.user_metadata?.user_id || user.email?.split("@")[0],
+              role: "user",
+              public_email: true,
+            };
+          }
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
       }
+
+      setProfile(existing);
+      setLoading(false);
     }
 
-    fetchProfile();
+    ensureProfile();
   }, [user]);
 
   return (
@@ -52,6 +116,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
