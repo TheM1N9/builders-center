@@ -15,7 +15,7 @@ export default function RegisterPage() {
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true);
-    const redirectTo = "/profile";
+    const redirectTo = `${window.location.origin}/profile`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
