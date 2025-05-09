@@ -39,7 +39,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { signOut } from "next-auth/react";
 
 type Profile = {
   id?: string;
@@ -52,10 +51,6 @@ type ProfileApplication = Application & {
   stars: number;
   isStarred: boolean;
   creator_user_id?: string;
-};
-
-const handleLogout = async () => {
-  await signOut({ callbackUrl: "/" });
 };
 
 export default function ProfilePage() {
@@ -367,6 +362,11 @@ export default function ProfilePage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   if (!user) {

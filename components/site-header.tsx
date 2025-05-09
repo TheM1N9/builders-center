@@ -117,11 +117,11 @@ export function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => signIn("google")}
+                onClick={() => router.push("/login")}
               >
                 Login
               </Button>
-              <Button size="sm" onClick={() => signIn("google")}>
+              <Button size="sm" onClick={() => router.push("/register")}>
                 Register
               </Button>
             </div>
