@@ -13,21 +13,24 @@ export default function WaitingApprovalPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // If user is approved, redirect to home
-    if (isApproved) {
-      router.push("/");
-    }
-  }, [isApproved, router]);
+      // When the user becomes *both* authenticated *and* approved → go home
+      if (user && isApproved) {
+        router.push("/");
+      }
+    }, [user, isApproved, router]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
   };
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
+  // let the effect below handle navigation instead of pushing in render
+  if (!user) return null;
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+    }
+  }, [user, router]);
 
   return (
     <div className="min-h-screen bg-background p-6">

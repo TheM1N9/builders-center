@@ -217,23 +217,17 @@ export default function AdminPage() {
 
   const handleApproveUser = async (userId: string) => {
     try {
-      // Update user's approval status
-      const { error: updateError } = await supabase
+      // Update user's approval status and fetch email + user_id
+      const { data: userData, error: updateError } = await supabase
         .from('profiles')
         .update({ approved: true })
-        .eq('id', userId);
-
-      if (updateError) throw updateError;
-
-      // Get user's email and user_id
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('email, user_id')
         .eq('id', userId)
+        .select('email, user_id')
         .single();
-
-      if (userError) throw userError;
-
+      if (updateError) throw updateError;
+      if (!userData?.email) {
+        throw new Error("User record missing email – aborting email send");
+      }
       // Send approval email through API route
       const response = await fetch('/api/send-email', {
         method: 'POST',
@@ -246,11 +240,9 @@ export default function AdminPage() {
           userName: userData.user_id,
         }),
       });
-
       if (!response.ok) {
         throw new Error('Failed to send approval email');
       }
-
       // Create notification
       const { error: notificationError } = await supabase
         .from('notifications')
@@ -260,9 +252,7 @@ export default function AdminPage() {
           message: 'Your account has been approved. You can now access all features.',
           type: 'success',
         });
-
       if (notificationError) throw notificationError;
-
       toast({
         title: "Success",
         description: "User approved successfully",

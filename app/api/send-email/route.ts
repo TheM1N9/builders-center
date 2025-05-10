@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
@@ -134,13 +135,12 @@ export async function POST(request: Request) {
             if (error.code === 'EAUTH' || error.message?.includes('invalid_grant')) {
                 console.log('Access token expired, refreshing...');
                 const newAccessToken = await refreshAccessToken();
-
                 // Update the transporter with the new access token
                 console.log('Updating transporter with new access token...');
-                transporter.set('oauth2_provision_cb', (user: string, renew: boolean, callback: any) => {
-                    callback(null, newAccessToken);
-                });
-
+                (transporter as any).options.auth = {
+                    ...(transporter as any).options.auth,
+                    accessToken: newAccessToken,
+                };
                 // Try sending the email again with the new token
                 console.log('Retrying email send with new token...');
                 const info = await transporter.sendMail(mailOptions);

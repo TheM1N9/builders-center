@@ -80,7 +80,7 @@ export default function ProfilePage() {
     if (user && profile) {
       // If user is not approved, redirect to waiting approval page
       if (!profile.approved) {
-        router.push("/waiting-approval");
+        router.replace("/waiting-approval");
         return;
       }
       
