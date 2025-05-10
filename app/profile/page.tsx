@@ -78,6 +78,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user && profile) {
+      // If user is not approved, redirect to waiting approval page
+      if (!profile.approved) {
+        router.push("/waiting-approval");
+        return;
+      }
+      
       setMyProfile(profile);
       setEditedUserId(profile.user_id || "");
       setEditedPublicEmail(profile.public_email || false);
@@ -85,7 +91,7 @@ export default function ProfilePage() {
     } else if (!user && !loading) {
       router.push("/login");
     }
-  }, [user, profile, loading]);
+  }, [user, profile, loading, router]);
 
   const fetchUserData = async () => {
     if (!profile?.id) return;
