@@ -24,19 +24,19 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 142 84% 72%;
+    --primary: 24 100% 50%; /* Already Orange */
     --primary-foreground: 355 100% 100%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 142 84% 72%;
+    --accent: 24 100% 50%; /* Already Orange */
     --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 142 84% 72%;
+    --ring: 24 84% 72%; /* Changed from Green (142 84% 72%) to Light Orange */
     --radius: 0.75rem;
   }
 
@@ -47,19 +47,19 @@
     --card-foreground: 0 0% 95%;
     --popover: 0 0% 9%;
     --popover-foreground: 0 0% 95%;
-    --primary: 142 94% 72%;
-    --primary-foreground: 144 100% 10%;
+    --primary: 24 95% 60%; /* Changed from Green (142 94% 72%) to Bright Orange */
+    --primary-foreground: 24 100% 10%; /* Adjusted foreground for new primary */
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 0 0% 15%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 142 94% 72%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 24 95% 60%; /* Changed from Green (142 94% 72%) to Bright Orange */
+    --accent-foreground: 0 0% 98%; /* Kept foreground, check contrast */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 85.7% 97.3%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 142 94% 72%;
+    --ring: 24 95% 60%; /* Changed from Green (142 94% 72%) to Bright Orange */
   }
 }
 
@@ -84,31 +84,31 @@
 
 @layer utilities {
   .glow {
-    text-shadow: 0 0 10px rgba(117, 250, 141, 0.5),
-                 0 0 20px rgba(117, 250, 141, 0.3),
-                 0 0 30px rgba(117, 250, 141, 0.2);
+    text-shadow: 0 0 10px rgba(239, 90, 60, 0.5), /* Orange */
+                 0 0 20px rgba(239, 90, 60, 0.3), /* Orange */
+                 0 0 30px rgba(239, 90, 60, 0.2); /* Orange */
   }
   
   .glow-sm {
-    text-shadow: 0 0 5px rgba(117, 250, 141, 0.5),
-                 0 0 10px rgba(117, 250, 141, 0.3);
+    text-shadow: 0 0 5px rgba(239, 90, 60, 0.5), /* Orange */
+                 0 0 10px rgba(239, 90, 60, 0.3); /* Orange */
   }
 
   .wave-bg {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 1000 Q 250 900 500 1000 T 1000 1000 V 0 H 0' fill='rgba(117, 250, 141, 0.03)'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 1000 Q 250 900 500 1000 T 1000 1000 V 0 H 0' fill='rgba(239, 90, 60, 0.03)'/%3E%3C/svg%3E");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
   }
 
   .grid-pattern {
-    background-image: radial-gradient(circle, rgba(117, 250, 141, 0.2) 1.5px, transparent 1px);
+    background-image: radial-gradient(circle, rgba(239, 90, 60, 0.2) 1.5px, transparent 1px); 
     background-size: 24px 24px;
     background-position: 0 0;
     animation: fadeInOut 3s ease-in-out infinite;
   }
 
   .interactive-hover {
-    @apply hover:text-white/80 hover:bg-[#75fa8d]/10 transition-colors;
+    @apply hover:text-white/80 hover:bg-[#ef5a3c]/10 transition-colors; /* Orange */
   }
 }

@@ -14,7 +14,7 @@ import { NotificationsProvider } from "@/contexts/notifications-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Builders Central",
+  title: "100x Engineers",
   description: "A centralized hub for managing and showcasing web applications",
 };
 

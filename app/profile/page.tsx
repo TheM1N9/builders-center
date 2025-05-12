@@ -83,7 +83,7 @@ export default function ProfilePage() {
         router.replace("/waiting-approval");
         return;
       }
-      
+
       setMyProfile(profile);
       setEditedUserId(profile.user_id || "");
       setEditedPublicEmail(profile.public_email || false);
@@ -518,8 +518,8 @@ export default function ProfilePage() {
           {(activeTab === "my"
             ? myApplications
             : activeTab === "liked"
-            ? likedApplications
-            : commentedApplications
+              ? likedApplications
+              : commentedApplications
           ).map((app) => (
             <Link
               href={`/applications/${app.id}`}
@@ -581,11 +581,11 @@ export default function ProfilePage() {
                               e.preventDefault();
                               handleStar(app.id, app.isStarred);
                             }}
-                            className={app.isStarred ? "text-[#75fa8d]" : ""}
+                            className={app.isStarred ? "text-[#ef5a3c]" : ""}
                           >
                             <Star
                               className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#75fa8d]" : ""
+                                app.isStarred ? "fill-[#ef5a3c]" : ""
                               }`}
                             />
                             <span className="text-xs">{app.stars}</span>
@@ -665,11 +665,11 @@ export default function ProfilePage() {
                               e.preventDefault();
                               handleStar(app.id, app.isStarred);
                             }}
-                            className={app.isStarred ? "text-[#75fa8d]" : ""}
+                            className={app.isStarred ? "text-[#ef5a3c]" : ""}
                           >
                             <Star
                               className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#75fa8d]" : ""
+                                app.isStarred ? "fill-[#ef5a3c]" : ""
                               }`}
                             />
                             <span className="text-xs">{app.stars}</span>

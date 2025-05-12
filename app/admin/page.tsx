@@ -219,38 +219,39 @@ export default function AdminPage() {
     try {
       // Update user's approval status and fetch email + user_id
       const { data: userData, error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ approved: true })
-        .eq('id', userId)
-        .select('email, user_id')
+        .eq("id", userId)
+        .select("email, user_id")
         .single();
       if (updateError) throw updateError;
       if (!userData?.email) {
         throw new Error("User record missing email – aborting email send");
       }
       // Send approval email through API route
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
+      const response = await fetch("/api/send-email", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: 'approval',
+          type: "approval",
           userEmail: userData.email,
           userName: userData.user_id,
         }),
       });
       if (!response.ok) {
-        throw new Error('Failed to send approval email');
+        throw new Error("Failed to send approval email");
       }
       // Create notification
       const { error: notificationError } = await supabase
-        .from('notifications')
+        .from("notifications")
         .insert({
           user_id: userId,
-          title: 'Account Approved',
-          message: 'Your account has been approved. You can now access all features.',
-          type: 'success',
+          title: "Account Approved",
+          message:
+            "Your account has been approved. You can now access all features.",
+          type: "success",
         });
       if (notificationError) throw notificationError;
       toast({
@@ -259,7 +260,7 @@ export default function AdminPage() {
       });
       fetchPendingUsers();
     } catch (error) {
-      console.error('Error approving user:', error);
+      console.error("Error approving user:", error);
       toast({
         title: "Error",
         description: "Failed to approve user",
@@ -272,35 +273,35 @@ export default function AdminPage() {
     try {
       // Get user's email and user_id before deleting
       const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('email, user_id')
-        .eq('id', userId)
+        .from("profiles")
+        .select("email, user_id")
+        .eq("id", userId)
         .single();
 
       if (userError) throw userError;
 
       // Send rejection email through API route
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
+      const response = await fetch("/api/send-email", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          type: 'rejection',
+          type: "rejection",
           userEmail: userData.email,
           userName: userData.user_id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send rejection email');
+        throw new Error("Failed to send rejection email");
       }
 
       // Delete user's profile
       const { error: deleteError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .delete()
-        .eq('id', userId);
+        .eq("id", userId);
 
       if (deleteError) throw deleteError;
 
@@ -310,7 +311,7 @@ export default function AdminPage() {
       });
       fetchPendingUsers();
     } catch (error) {
-      console.error('Error rejecting user:', error);
+      console.error("Error rejecting user:", error);
       toast({
         title: "Error",
         description: "Failed to reject user",
@@ -410,7 +411,8 @@ export default function AdminPage() {
                             <Button
                               size="sm"
                               variant="default"
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-orange-500 hover:bg-orange-600"
+                              style={{ color: "#ef5a3c" }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 handleStatusChange(app.id, "approved");

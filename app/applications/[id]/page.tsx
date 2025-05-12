@@ -696,16 +696,16 @@ export default function ApplicationPage() {
                 application?.status === "pending"
                   ? "bg-yellow-500/10 text-yellow-500"
                   : application?.status === "rejected"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-blue-500/10 text-blue-500"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-blue-500/10 text-blue-500"
               }`}
             >
               {isAdmin ? "(Admin View) " : ""}
               {application?.status === "pending"
                 ? "This application is pending approval"
                 : application?.status === "rejected"
-                ? "This application has been rejected"
-                : "This application is awaiting re-review"}
+                  ? "This application has been rejected"
+                  : "This application is awaiting re-review"}
             </div>
           )}
 
@@ -835,12 +835,12 @@ export default function ApplicationPage() {
                 size="sm"
                 onClick={handleStar}
                 className={`gap-2 ${
-                  application.isStarred ? "text-[#75fa8d]" : ""
+                  application.isStarred ? "text-[#ef5a3c]" : ""
                 }`}
               >
                 <Star
                   className={`h-4 w-4 ${
-                    application.isStarred ? "fill-[#75fa8d]" : ""
+                    application.isStarred ? "fill-[#ef5a3c]" : ""
                   }`}
                 />
                 {application.stars}

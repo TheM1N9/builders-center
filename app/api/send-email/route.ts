@@ -2,68 +2,23 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-// Function to refresh the access token
-async function refreshAccessToken() {
-    try {
-        console.log('Attempting to refresh access token...');
-        console.log('Using credentials:', {
-            clientId: process.env.GOOGLE_CLIENT_ID ? 'present' : 'missing',
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET ? 'present' : 'missing',
-            refreshToken: process.env.GOOGLE_REFRESH_TOKEN ? 'present' : 'missing',
-        });
-
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                client_id: process.env.GOOGLE_CLIENT_ID!,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-                refresh_token: process.env.GOOGLE_REFRESH_TOKEN!,
-                grant_type: 'refresh_token',
-            }),
-        });
-
-        const responseData = await response.json();
-
-        if (!response.ok) {
-            console.error('Token refresh failed:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: responseData,
-            });
-            throw new Error(`Failed to refresh access token: ${responseData.error_description || responseData.error || 'Unknown error'}`);
-        }
-
-        console.log('Token refresh successful');
-        return responseData.access_token;
-    } catch (error) {
-        console.error('Error refreshing access token:', error);
-        throw error;
-    }
-}
-
 // Create reusable transporter object using Gmail SMTP
-let transporter: nodemailer.Transporter;
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD, // Use App Password instead of OAuth2
+    },
+});
 
-async function getTransporter() {
-    if (!transporter) {
-        console.log('Creating new transporter...');
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                type: 'OAuth2',
-                user: process.env.GMAIL_USER,
-                clientId: process.env.GOOGLE_CLIENT_ID,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-                accessToken: process.env.GMAIL_ACCESS_TOKEN,
-            },
-        });
+// Verify transporter configuration
+transporter.verify(function (error, success) {
+    if (error) {
+        console.error('Transporter verification failed:', error);
+    } else {
+        console.log('Transporter is ready to send emails');
     }
-    return transporter;
-}
+});
 
 export async function POST(request: Request) {
     try {
@@ -75,6 +30,15 @@ export async function POST(request: Request) {
                 { status: 400 }
             );
         }
+
+        // Log environment variables (without exposing sensitive data)
+        console.log('Email configuration:', {
+            hasGmailUser: !!process.env.GMAIL_USER,
+            hasAppPassword: !!process.env.GMAIL_APP_PASSWORD,
+            userEmail,
+            userName,
+            type
+        });
 
         let mailOptions;
         if (type === 'approval') {
@@ -121,39 +85,28 @@ export async function POST(request: Request) {
             );
         }
 
-        // Get the transporter
-        const transporter = await getTransporter();
-
         try {
-            // Try to send the email
             console.log('Attempting to send email...');
             const info = await transporter.sendMail(mailOptions);
             console.log('Email sent successfully:', info.messageId);
             return NextResponse.json({ success: true, messageId: info.messageId });
         } catch (error: any) {
-            // If the error is due to an expired token, refresh it and try again
-            if (error.code === 'EAUTH' || error.message?.includes('invalid_grant')) {
-                console.log('Access token expired, refreshing...');
-                const newAccessToken = await refreshAccessToken();
-                // Update the transporter with the new access token
-                console.log('Updating transporter with new access token...');
-                (transporter as any).options.auth = {
-                    ...(transporter as any).options.auth,
-                    accessToken: newAccessToken,
-                };
-                // Try sending the email again with the new token
-                console.log('Retrying email send with new token...');
-                const info = await transporter.sendMail(mailOptions);
-                console.log('Email sent successfully after token refresh:', info.messageId);
-                return NextResponse.json({ success: true, messageId: info.messageId });
-            }
-            console.error('Error sending email:', error);
+            console.error('Detailed email error:', {
+                message: error.message,
+                code: error.code,
+                command: error.command,
+                responseCode: error.responseCode,
+                response: error.response
+            });
             throw error;
         }
-    } catch (error) {
-        console.error('Error in email service:', error);
+    } catch (error: any) {
+        console.error('Error in email service:', {
+            message: error.message,
+            stack: error.stack
+        });
         return NextResponse.json(
-            { error: 'Failed to send email' },
+            { error: `Failed to send email: ${error.message}` },
             { status: 500 }
         );
     }
