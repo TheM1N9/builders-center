@@ -107,6 +107,7 @@ type ApplicationWithDetails = Application & {
   comments_enabled: boolean;
   review_requested_at?: string | null;
   status: "pending" | "approved" | "rejected" | "review_requested";
+  video_url?: string | null;
 };
 
 export default function ApplicationPage() {
@@ -285,6 +286,7 @@ export default function ApplicationPage() {
         isStarred,
         creator_user_id: app.creator?.user_id,
         comments_enabled: app.comments_enabled,
+        video_url: app.video_url,
       });
     } catch (error: any) {
       // console.error("Error fetching application:", error);
@@ -722,7 +724,7 @@ export default function ApplicationPage() {
           {/* Content */}
           <div className="p-6">
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4 gap-4">
               <h1 className="text-3xl font-bold">{application.title}</h1>
 
               <div className="flex items-center gap-2">
@@ -868,6 +870,27 @@ export default function ApplicationPage() {
             </div>
           </div>
         </Card>
+
+        {application.video_url && (
+          <Card className="mt-6 p-6">
+            <h2 className="text-2xl font-semibold mb-4">Demo Video</h2>
+            <div className="aspect-video relative">
+              {" "}
+              {/* Added relative for better iframe sizing */}
+              <iframe
+                src={application.video_url
+                  .replace("/view?usp=sharing", "/preview")
+                  .replace("/view", "/preview")}
+                width="100%"
+                height="100%"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title="Application Demo Video"
+                className="rounded-md absolute top-0 left-0 w-full h-full" /* Added absolute positioning */
+              ></iframe>
+            </div>
+          </Card>
+        )}
 
         {/* Comments Section */}
         {application.comments_enabled ? (

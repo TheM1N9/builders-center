@@ -23,6 +23,7 @@ export function FileUpload({
   );
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) {
@@ -63,11 +64,12 @@ export function FileUpload({
       // Create a unique file name with user ID to ensure uniqueness
       const fileExt = file.name.split(".").pop();
       // Validate extension is safe
-      const safeExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const safeExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
       if (!fileExt || !safeExtensions.includes(fileExt.toLowerCase())) {
         toast({
           title: "Error",
-          description: "Invalid file extension. Please upload a valid image file.",
+          description:
+            "Invalid file extension. Please upload a valid image file.",
           variant: "destructive",
         });
         return;
@@ -125,6 +127,26 @@ export function FileUpload({
     onUploadComplete("");
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      // Simulate file input change event
+      handleFileChange({ target: { files: [file] } } as any);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <Label>Application Logo</Label>
@@ -157,7 +179,16 @@ export function FileUpload({
             </Button>
           </div>
         ) : (
-          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isDragActive
+                ? "border-primary bg-primary/10"
+                : "border-muted-foreground/25"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <input
               type="file"
               accept="image/*"
@@ -172,7 +203,11 @@ export function FileUpload({
             >
               <Upload className="h-8 w-8 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                {uploading ? "Uploading..." : "Click to upload an image"}
+                {uploading
+                  ? "Uploading..."
+                  : isDragActive
+                  ? "Drop the image here"
+                  : "Click or drag an image to upload"}
               </span>
             </label>
           </div>
