@@ -14,7 +14,7 @@ import { NotificationsProvider } from "@/contexts/notifications-context";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Builders Central",
+  title: "100x Engineers",
   description: "A centralized hub for managing and showcasing web applications",
 };
 
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/logo.jpg" type="image/jpeg" />
+        <link rel="icon" href="/logo.png" type="image/jpeg" />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
         <Providers session={session}>

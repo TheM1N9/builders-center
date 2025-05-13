@@ -1,10 +1,10 @@
-# Builders Central
+# 100x Engineers
 
-Welcome to **Builders Central**, a centralized hub for managing and showcasing web applications. This platform is designed to empower developers by providing a space to display their projects, gain insights, and connect with a community of like-minded individuals.
+Welcome to **100x Engineers**, a centralized hub for managing and showcasing web applications. This platform is designed to empower developers by providing a space to display their projects, gain insights, and connect with a community of like-minded individuals.
 
 ## About
 
-Builders Central was created to solve the problem of project discovery and showcase in the developer community. Whether you're looking to share your latest project or discover innovative applications, Builders Central provides the platform to connect builders with their audience.
+100x Engineers was created to solve the problem of project discovery and showcase in the developer community. Whether you're looking to share your latest project or discover innovative applications, 100x Engineers provides the platform to connect builders with their audience.
 
 ## Key Features
 
@@ -45,4 +45,4 @@ Built with ❤️ for the developer community by [@them1n9](https://github.com/t
 
 ---
 
-Thank you for choosing Builders Central. We look forward to seeing your amazing projects and contributions! 
+Thank you for choosing 100x Engineers. We look forward to seeing your amazing projects and contributions! 
