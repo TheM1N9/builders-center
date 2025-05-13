@@ -102,7 +102,7 @@
   }
 
   .grid-pattern {
-    background-image: radial-gradient(circle, rgba(239, 90, 60, 0.2) 1.5px, transparent 1px); 
+    background-image: radial-gradient(circle, rgba(239, 90, 60, 0.5) 1.5px, transparent 1px); 
     background-size: 24px 24px;
     background-position: 0 0;
     animation: fadeInOut 3s ease-in-out infinite;

@@ -107,7 +107,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center wave-bg overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(117,250,141,0.1)_0%,transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,90,141,0.1)_0%,transparent_65%)]" />
         <div className="absolute inset-0 grid-pattern" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
