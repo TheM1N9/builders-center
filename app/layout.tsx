@@ -35,6 +35,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="icon" href="/logo.jpg" type="image/jpeg" />
+      </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
         <Providers session={session}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

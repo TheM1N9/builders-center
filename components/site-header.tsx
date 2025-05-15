@@ -17,7 +17,7 @@ import {
 import { Menu, User } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { supabase } from "@/lib/supabase";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -28,7 +28,8 @@ export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" });
+    await supabase.auth.signOut();
+    router.push("/");
   };
 
   return (
@@ -137,11 +138,11 @@ export function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => signIn("google")}
+                onClick={() => router.push("/login")}
               >
                 Login
               </Button>
-              <Button size="sm" onClick={() => signIn("google")}>
+              <Button size="sm" onClick={() => router.push("/register")}>
                 Register
               </Button>
             </div>

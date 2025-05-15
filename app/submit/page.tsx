@@ -10,13 +10,24 @@ import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/ui/file-upload";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function SubmitPage() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -24,6 +35,15 @@ export default function SubmitPage() {
       toast({
         title: "Error",
         description: "You must be logged in to submit an application",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!screenshotUrl) {
+      toast({
+        title: "Error",
+        description: "Please upload a screenshot of your application",
         variant: "destructive",
       });
       return;
@@ -49,9 +69,10 @@ export default function SubmitPage() {
         .from("applications")
         .insert({
           title: formData.get("title"),
-          description: formData.get("description"),
+          description: description,
           url: formData.get("url"),
-          screenshot_url: formData.get("screenshot"),
+          screenshot_url: screenshotUrl,
+          video_url: formData.get("video_url") || null,
           tags,
           creator_id: profile.id,
           comments_enabled: true,
@@ -143,14 +164,24 @@ export default function SubmitPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                placeholder="Describe your application..."
-                className="min-h-[100px]"
-                required
-              />
+              <div className="flex items-center gap-2">
+                <Label htmlFor="description">Description</Label>
+                <MarkdownHelp />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[200px]"
+                  required
+                />
+                <div className="border rounded-md p-4">
+                  <h3 className="text-sm font-medium mb-2">Preview</h3>
+                  <MarkdownPreview content={description} />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -165,15 +196,34 @@ export default function SubmitPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="screenshot">Screenshot URL</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="video_url">Demo Video (Optional)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Share a Google Drive link to a video demonstrating your
+                      application's functionality.
+                      <br />
+                      <b>
+                        Don't forget to give public access to the video you are
+                        sharing.
+                      </b>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input
-                id="screenshot"
-                name="screenshot"
+                id="video_url"
+                name="video_url"
                 type="url"
-                placeholder="https://your-screenshot.com/image.png"
-                required
+                placeholder="https://drive.google.com/file/d/your-video-id/view"
               />
             </div>
+
+            <FileUpload onUploadComplete={setScreenshotUrl} />
 
             <div className="space-y-2">
               <Label htmlFor="tags">Tags (comma separated)</Label>
@@ -194,9 +244,18 @@ export default function SubmitPage() {
               />
             </div> */}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Application"}
-            </Button>
+            <div className="flex gap-4">
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit Application"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/profile")}
+              >
+                Cancel
+              </Button>
+            </div>
           </form>
         </Card>
       </div>

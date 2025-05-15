@@ -11,6 +11,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/auth-context";
 import { supabase } from "@/lib/supabase";
 import type { Application } from "@/types";
+import { FileUpload } from "@/components/ui/file-upload";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
 
 export default function EditPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
@@ -19,6 +22,8 @@ export default function EditPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +55,8 @@ export default function EditPage({ params }: { params: { id: string } }) {
       }
 
       setApplication(data);
+      setScreenshotUrl(data.screenshot_url);
+      setDescription(data.description);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -64,6 +71,15 @@ export default function EditPage({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!screenshotUrl) {
+      toast({
+        title: "Error",
+        description: "Please upload a screenshot of your application",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -82,7 +98,7 @@ export default function EditPage({ params }: { params: { id: string } }) {
           title: formData.get("title"),
           description: formData.get("description"),
           url: formData.get("url"),
-          screenshot_url: formData.get("screenshot"),
+          screenshot_url: screenshotUrl,
           tags,
         })
         .eq("id", params.id);
@@ -148,14 +164,24 @@ export default function EditPage({ params }: { params: { id: string } }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={application.description}
-                className="min-h-[100px]"
-                required
-              />
+              <div className="flex items-center gap-2">
+                <Label htmlFor="description">Description</Label>
+                <MarkdownHelp />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[200px]"
+                  required
+                />
+                <div className="border rounded-md p-4">
+                  <h3 className="text-sm font-medium mb-2">Preview</h3>
+                  <MarkdownPreview content={description} />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -169,16 +195,11 @@ export default function EditPage({ params }: { params: { id: string } }) {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="screenshot">Screenshot URL</Label>
-              <Input
-                id="screenshot"
-                name="screenshot"
-                type="url"
-                defaultValue={application.screenshot_url}
-                required
-              />
-            </div>
+            <FileUpload
+              onUploadComplete={setScreenshotUrl}
+              currentUrl={application.screenshot_url}
+              folder={`applications/${application.id}`}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="tags">Tags (comma separated)</Label>

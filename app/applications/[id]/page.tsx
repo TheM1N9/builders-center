@@ -41,6 +41,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
+import { MarkdownHelp } from "@/components/ui/markdown-help";
+import { Label } from "@/components/ui/label";
 // import { CommentSection } from "@/components/comment-section";
 
 type Reply = {
@@ -104,6 +107,7 @@ type ApplicationWithDetails = Application & {
   comments_enabled: boolean;
   review_requested_at?: string | null;
   status: "pending" | "approved" | "rejected" | "review_requested";
+  video_url?: string | null;
 };
 
 export default function ApplicationPage() {
@@ -124,6 +128,8 @@ export default function ApplicationPage() {
   const [isUserCreator, setIsUserCreator] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCommentPreview, setShowCommentPreview] = useState(false);
+  const [showReplyPreview, setShowReplyPreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchApplication();
@@ -280,6 +286,7 @@ export default function ApplicationPage() {
         isStarred,
         creator_user_id: app.creator?.user_id,
         comments_enabled: app.comments_enabled,
+        video_url: app.video_url,
       });
     } catch (error: any) {
       // console.error("Error fetching application:", error);
@@ -717,7 +724,7 @@ export default function ApplicationPage() {
           {/* Content */}
           <div className="p-6">
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-start mb-4 gap-4">
               <h1 className="text-3xl font-bold">{application.title}</h1>
 
               <div className="flex items-center gap-2">
@@ -809,9 +816,10 @@ export default function ApplicationPage() {
             </div>
 
             {/* Description */}
-            <p className="text-lg text-muted-foreground mb-6">
-              {application.description}
-            </p>
+            <div className="space-y-2">
+              {/* <h2 className="text-xl font-semibold">Description</h2> */}
+              <MarkdownPreview content={application.description} />
+            </div>
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-6">
@@ -863,6 +871,27 @@ export default function ApplicationPage() {
           </div>
         </Card>
 
+        {application.video_url && (
+          <Card className="mt-6 p-6">
+            <h2 className="text-2xl font-semibold mb-4">Demo Video</h2>
+            <div className="aspect-video relative">
+              {" "}
+              {/* Added relative for better iframe sizing */}
+              <iframe
+                src={application.video_url
+                  .replace("/view?usp=sharing", "/preview")
+                  .replace("/view", "/preview")}
+                width="100%"
+                height="100%"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title="Application Demo Video"
+                className="rounded-md absolute top-0 left-0 w-full h-full" /* Added absolute positioning */
+              ></iframe>
+            </div>
+          </Card>
+        )}
+
         {/* Comments Section */}
         {application.comments_enabled ? (
           <Card className="mt-6 p-6">
@@ -871,13 +900,40 @@ export default function ApplicationPage() {
             {profile && (
               <form onSubmit={handleSubmitComment} className="mb-6">
                 <div className="space-y-4">
-                  <Textarea
-                    placeholder="Write a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    required
-                    className="min-h-[100px]"
-                  />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="comment">Write a comment</Label>
+                      <MarkdownHelp />
+                    </div>
+                    <Textarea
+                      id="comment"
+                      placeholder="Write a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      required
+                      className="min-h-[100px]"
+                    />
+                    <div className="flex items-center justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setShowCommentPreview(!showCommentPreview)
+                        }
+                      >
+                        {showCommentPreview ? "Hide Preview" : "Show Preview"}
+                      </Button>
+                    </div>
+                    {showCommentPreview && (
+                      <div className="border rounded-md p-4">
+                        <MarkdownPreview
+                          content={newComment}
+                          className="text-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
                   <Button
                     type="submit"
                     disabled={isSubmittingComment || !newComment.trim()}
@@ -910,7 +966,10 @@ export default function ApplicationPage() {
                         })}
                       </span>
                     </div>
-                    <p className="mb-2">{comment.content}</p>
+                    <MarkdownPreview
+                      content={comment.content}
+                      className="text-sm"
+                    />
                     <div className="flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -931,13 +990,48 @@ export default function ApplicationPage() {
                         className="mt-4"
                       >
                         <div className="space-y-4">
-                          <Textarea
-                            placeholder="Write a reply..."
-                            value={replyContent}
-                            onChange={(e) => setReplyContent(e.target.value)}
-                            required
-                            className="min-h-[100px]"
-                          />
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`reply-${comment.id}`}>
+                                Write a reply
+                              </Label>
+                              <MarkdownHelp />
+                            </div>
+                            <Textarea
+                              id={`reply-${comment.id}`}
+                              placeholder="Write a reply..."
+                              value={replyContent}
+                              onChange={(e) => setReplyContent(e.target.value)}
+                              required
+                              className="min-h-[100px]"
+                            />
+                            <div className="flex items-center justify-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setShowReplyPreview(
+                                    showReplyPreview === comment.id
+                                      ? null
+                                      : comment.id
+                                  )
+                                }
+                              >
+                                {showReplyPreview === comment.id
+                                  ? "Hide Preview"
+                                  : "Show Preview"}
+                              </Button>
+                            </div>
+                            {showReplyPreview === comment.id && (
+                              <div className="border rounded-md p-4">
+                                <MarkdownPreview
+                                  content={replyContent}
+                                  className="text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
                           <Button
                             type="submit"
                             disabled={isSubmittingReply || !replyContent.trim()}
@@ -967,7 +1061,10 @@ export default function ApplicationPage() {
                                 )}
                               </span>
                             </div>
-                            <p>{reply.content}</p>
+                            <MarkdownPreview
+                              content={reply.content}
+                              className="text-sm"
+                            />
                           </div>
                         ))}
                       </div>
