@@ -22,6 +22,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type FeaturedApp = {
   title: string;
@@ -35,6 +42,7 @@ type FeaturedApp = {
 export default function Home() {
   const [featuredApps, setFeaturedApps] = useState<FeaturedApp[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEventDialog, setShowEventDialog] = useState(true);
 
   useEffect(() => {
     fetchFeaturedApps();
@@ -104,6 +112,36 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background dark">
+      {/* Event Registration Dialog */}
+      <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+        <DialogContent className="sm:max-w-[725px] max-h-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-[#75fa8d]">
+              Builders Central Connect
+            </DialogTitle>
+            <DialogDescription className="text-base">
+              Join Builders Central for an exclusive, invite-only event! Connect
+              with fellow creators and builders, dive into the latest in
+              no-code, low-code, and AI, and get inspired to innovate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Button
+              className="w-full bg-[#75fa8d] hover:bg-[#75fa8d]/90 text-background"
+              asChild
+            >
+              <Link
+                href="https://forms.gle/sWvGKoQhZcRzwCRa9"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Register Now
+              </Link>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center wave-bg overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-background" />
@@ -141,153 +179,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* Social Media Section */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-[#75fa8d] mb-4">
-            Follow Our Journey
-          </h2>
-          <p className="text-xl text-muted-foreground">
-            Learn no-code and low-code development through our tutorials and
-            byte-sized content
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* YouTube Section */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <Youtube className="h-8 w-8 text-[#75fa8d]" />
-              <h3 className="text-2xl font-semibold">Detailed Content</h3>
-            </div>
-            <div className="space-y-6">
-              <div className="aspect-video">
-                <iframe
-                  className="w-full h-full rounded-lg"
-                  src="https://www.youtube.com/embed/ItrLV92rTro"
-                  title="YouTube tutorial"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="aspect-video">
-                  <iframe
-                    className="w-full h-full rounded-lg"
-                    src="https://www.youtube.com/embed/FPbZYCrql8k"
-                    title="YouTube tutorial"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-                <div className="aspect-video">
-                  <iframe
-                    className="w-full h-full rounded-lg"
-                    src="https://www.youtube.com/embed/8jH0mvGyZa4"
-                    title="YouTube tutorial"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </div>
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-[#75fa8d] text-[#75fa8d] hover:bg-[#75fa8d]/10"
-                  asChild
-                >
-                  <Link
-                    href="https://www.youtube.com/@BuildersCentral"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    <Youtube className="h-5 w-5" />
-                    Subscribe for More Detailded Content
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Instagram Section */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <Instagram className="h-8 w-8 text-[#75fa8d]" />
-              <h3 className="text-2xl font-semibold">Byte-sized Content</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Link
-                href="https://www.instagram.com/reel/DGf7O0ATV5r/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative group overflow-hidden rounded-lg hover:shadow-lg transition-all"
-              >
-                <div className="aspect-[9/16] relative">
-                  <img
-                    src="/instagram-preview-1.png"
-                    alt="No-Code App Building"
-                    className="object-cover w-full h-full rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                    <div className="text-white">
-                      <p className="font-medium">No-Code App Building</p>
-                      <div className="flex items-center mt-2">
-                        <Instagram className="h-4 w-4 mr-1" />
-                        <span className="text-sm">Watch on Instagram</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link
-                href="https://www.instagram.com/reel/DGdTOSvTlIT/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative group overflow-hidden rounded-lg hover:shadow-lg transition-all"
-              >
-                <div className="aspect-[9/16] relative">
-                  <img
-                    src="/instagram-preview-2.png"
-                    alt="Low-Code Tips & Tricks"
-                    className="object-cover w-full h-full rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                    <div className="text-white">
-                      <p className="font-medium">Low-Code Tips & Tricks</p>
-                      <div className="flex items-center mt-2">
-                        <Instagram className="h-4 w-4 mr-1" />
-                        <span className="text-sm">Watch on Instagram</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </div>
-            <div className="text-center">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-[#75fa8d] text-[#75fa8d] hover:bg-[#75fa8d]/10"
-                asChild
-              >
-                <Link
-                  href="https://www.instagram.com/builders.central/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2"
-                >
-                  <Instagram className="h-5 w-5" />
-                  Follow for More Byte-sized Content
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Featured Applications */}
       <section className="py-20 relative overflow-hidden">
@@ -411,6 +302,155 @@ export default function Home() {
               Get visibility, feedback, and grow your application with our
               community.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Media Section */}
+      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-[#75fa8d] mb-4">
+            Follow Our Journey
+          </h2>
+          <p className="text-xl text-muted-foreground">
+            Learn no-code and low-code development through our tutorials and
+            byte-sized content
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* YouTube Section */}
+          <div className="space-y-8">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <Youtube className="h-8 w-8 text-[#75fa8d]" />
+              <h3 className="text-2xl font-semibold">Detailed Content</h3>
+            </div>
+            <div className="space-y-6">
+              <div className="aspect-video">
+                <iframe
+                  className="w-full h-full rounded-lg"
+                  src="https://www.youtube.com/embed/-c3kAOZX2mI"
+                  title="YouTube tutorial"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="aspect-video">
+                  <iframe
+                    className="w-full h-full rounded-lg"
+                    src="https://www.youtube.com/embed/FPbZYCrql8k"
+                    title="YouTube tutorial"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <div className="aspect-video">
+                  <iframe
+                    className="w-full h-full rounded-lg"
+                    src="https://www.youtube.com/embed/8jH0mvGyZa4"
+                    title="YouTube tutorial"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+              <div className="text-center">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-[#75fa8d] text-[#75fa8d] hover:bg-[#75fa8d]/10"
+                  asChild
+                >
+                  <Link
+                    href="https://www.youtube.com/@BuildersCentral"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <Youtube className="h-5 w-5" />
+                    Subscribe for More Detailded Content
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Instagram Section */}
+          <div className="space-y-8">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <Instagram className="h-8 w-8 text-[#75fa8d]" />
+              <h3 className="text-2xl font-semibold">Byte-sized Content</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Link
+                href="https://www.instagram.com/reel/C4SJdg0SLLF/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative group overflow-hidden rounded-lg hover:shadow-lg transition-all"
+              >
+                <div className="aspect-[9/16] relative">
+                  <img
+                    src="/instagram-preview-1.png"
+                    alt="From building a college project to selling it."
+                    className="object-cover w-full h-full rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <div className="text-white">
+                      <p className="font-medium">
+                        From building a college project to selling it.
+                      </p>
+                      <div className="flex items-center mt-2">
+                        <Instagram className="h-4 w-4 mr-1" />
+                        <span className="text-sm">Watch on Instagram</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link
+                href="https://www.instagram.com/reel/C6Op6iPSWQo/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative group overflow-hidden rounded-lg hover:shadow-lg transition-all"
+              >
+                <div className="aspect-[9/16] relative">
+                  <img
+                    src="/instagram-preview-2.png"
+                    alt="Build your own app now!"
+                    className="object-cover w-full h-full rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <div className="text-white">
+                      <p className="font-medium">Build your own app now!</p>
+                      <div className="flex items-center mt-2">
+                        <Instagram className="h-4 w-4 mr-1" />
+                        <span className="text-sm">Watch on Instagram</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+            <div className="text-center">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-[#75fa8d] text-[#75fa8d] hover:bg-[#75fa8d]/10"
+                asChild
+              >
+                <Link
+                  href="https://www.instagram.com/builders.central/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <Instagram className="h-5 w-5" />
+                  Follow for More Byte-sized Content
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
