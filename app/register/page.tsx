@@ -17,7 +17,7 @@ export default function RegisterPage() {
     setIsLoading(true);
     const redirectTo =
       process.env.NEXT_PUBLIC_REDIRECT_URL ??
-      `${window.location.origin}/profile`;
+      `${window.location.origin}/waiting-approval`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
