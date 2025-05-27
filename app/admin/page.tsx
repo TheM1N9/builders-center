@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, CheckCircle, XCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Application } from "@/types";
 import Image from "next/image";
@@ -36,6 +36,12 @@ type AdminApplication = Application & {
   creator_user_id?: string;
 };
 
+type PendingUser = {
+  id: string;
+  email: string;
+  user_id: string;
+};
+
 export default function AdminPage() {
   const { user, profile } = useAuth();
   const [applications, setApplications] = useState<AdminApplication[]>([]);
@@ -46,6 +52,7 @@ export default function AdminPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { notifications, markAsRead } = useNotifications();
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
 
   useEffect(() => {
     if (user && profile) {
@@ -58,6 +65,28 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin) {
       fetchApplications();
+      fetchPendingUsers();
+
+      // Subscribe to new user notifications
+      const channel = supabase
+        .channel("new_users")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "profiles",
+            filter: "approved=eq.false",
+          },
+          () => {
+            fetchPendingUsers();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        channel.unsubscribe();
+      };
     }
   }, [isAdmin, statusFilter]);
 
@@ -186,6 +215,132 @@ export default function AdminPage() {
     }
   };
 
+  const handleApproveUser = async (userId: string) => {
+    try {
+      // Update user's approval status and fetch email + user_id
+      const { data: userData, error: updateError } = await supabase
+        .from("profiles")
+        .update({ approved: true })
+        .eq("id", userId)
+        .select("email, user_id")
+        .single();
+      if (updateError) throw updateError;
+      if (!userData?.email) {
+        throw new Error("User record missing email – aborting email send");
+      }
+      // Send approval email through API route
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "approval",
+          userEmail: userData.email,
+          userName: userData.user_id,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send approval email");
+      }
+      // Create notification
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          title: "Account Approved",
+          message:
+            "Your account has been approved. You can now access all features.",
+          type: "success",
+        });
+      if (notificationError) throw notificationError;
+      toast({
+        title: "Success",
+        description: "User approved successfully",
+      });
+      fetchPendingUsers();
+    } catch (error) {
+      console.error("Error approving user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectUser = async (userId: string) => {
+    try {
+      // Get user's email and user_id before deleting
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("email, user_id")
+        .eq("id", userId)
+        .single();
+
+      if (userError) throw userError;
+
+      // Send rejection email through API route
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "rejection",
+          userEmail: userData.email,
+          userName: userData.user_id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send rejection email");
+      }
+
+      // Delete user's profile
+      const { error: deleteError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Success",
+        description: "User rejected successfully",
+      });
+      fetchPendingUsers();
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchPendingUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, user_id")
+        .eq("approved", false)
+        .returns<PendingUser[]>();
+
+      if (error) throw error;
+
+      setPendingUsers(data || []);
+    } catch (error) {
+      console.error("Error fetching pending users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pending users",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-8">
@@ -256,7 +411,8 @@ export default function AdminPage() {
                             <Button
                               size="sm"
                               variant="default"
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-orange-500 hover:bg-orange-600"
+                              style={{ color: "#ef5a3c" }}
                               onClick={(e) => {
                                 e.preventDefault();
                                 handleStatusChange(app.id, "approved");
@@ -317,6 +473,42 @@ export default function AdminPage() {
             No applications found with the selected status.
           </div>
         )}
+
+        {/* Pending Users Section */}
+        <Card className="mt-8">
+          <div className="p-6">
+            <h2 className="text-2xl font-semibold mb-4">Pending Users</h2>
+            <div className="space-y-4">
+              {pendingUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium">{user.user_id}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {user.email}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleRejectUser(user.id)}
+                    >
+                      Reject
+                    </Button>
+                    <Button onClick={() => handleApproveUser(user.id)}>
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {pendingUsers.length === 0 && (
+                <p className="text-muted-foreground">No pending users</p>
+              )}
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );

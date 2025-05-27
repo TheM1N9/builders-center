@@ -80,63 +80,51 @@ export function NotificationsDropdown() {
             notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification.id}
-                className={`p-4 border-b last:border-0 cursor-default ${
-                  !notification.read ? "bg-muted/50" : ""
+                className={`p-3 flex items-start gap-3 cursor-pointer group ${
+                  notification.read ? "" : "bg-muted/50 hover:bg-muted"
                 }`}
-                onSelect={(e) => e.preventDefault()}
+                onClick={() => handleNotificationClick(notification)}
               >
-                <div className="flex justify-between w-full">
-                  <div
-                    className="flex flex-col gap-1 cursor-pointer flex-grow"
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <span className="font-medium text-sm">
-                        {notification.title}
-                      </span>
-                      {!notification.read && (
-                        <Badge variant="destructive" className="ml-2">
-                          New
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {notification.message}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {notification.created_at
-                        ? formatDistanceToNow(
-                            new Date(notification.created_at),
-                            {
-                              addSuffix: true,
-                            }
-                          )
-                        : "Just now"}
-                    </p>
+                <div className="flex-1 space-y-1">
+                  <div className="flex justify-between items-start group-hover:text-white">
+                    <span className="font-medium text-sm">
+                      {notification.title}
+                    </span>
+                    {!notification.read && (
+                      <Badge variant="destructive" className="ml-2">
+                        New
+                      </Badge>
+                    )}
                   </div>
-                  {!notification.read && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 ml-2 hover:text-primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markAsRead(notification.id);
-                            }}
-                          >
-                            <CheckCheck className="h-6 w-6 text-blue-500" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Mark as read</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
+                  <p className="text-xs text-muted-foreground group-hover:text-gray-200 line-clamp-2">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-muted-foreground group-hover:text-gray-300">
+                    {new Date(notification.created_at).toLocaleString()}
+                  </p>
                 </div>
+                {!notification.read && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-2 hover:text-primary group-hover:text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(notification.id);
+                          }}
+                        >
+                          <CheckCheck className="h-6 w-6 text-blue-500" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Mark as read</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </DropdownMenuItem>
             ))
           )}

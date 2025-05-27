@@ -275,12 +275,12 @@ export default function ApplicationsPage() {
                                     handleStar(app.id, app.isStarred);
                                   }}
                                   className={
-                                    app.isStarred ? "text-[#75fa8d]" : ""
+                                    app.isStarred ? "text-[#ef5a3c]" : ""
                                   }
                                 >
                                   <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isStarred ? "fill-[#75fa8d]" : ""
+                                      app.isStarred ? "fill-[#ef5a3c]" : ""
                                     }`}
                                   />
                                   <span className="text-xs">{app.stars}</span>
@@ -375,12 +375,12 @@ export default function ApplicationsPage() {
                                     handleStar(app.id, app.isStarred);
                                   }}
                                   className={
-                                    app.isStarred ? "text-[#75fa8d]" : ""
+                                    app.isStarred ? "text-[#ef5a3c]" : ""
                                   }
                                 >
                                   <Star
                                     className={`h-4 w-4 mr-1 ${
-                                      app.isStarred ? "fill-[#75fa8d]" : ""
+                                      app.isStarred ? "fill-[#ef5a3c]" : ""
                                     }`}
                                   />
                                   <span className="text-xs">{app.stars}</span>
