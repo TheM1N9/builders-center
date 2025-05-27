@@ -13,6 +13,13 @@ import { useState } from "react";
 import { FileUpload } from "@/components/ui/file-upload";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { MarkdownHelp } from "@/components/ui/markdown-help";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function SubmitPage() {
   const { user, profile } = useAuth();
@@ -65,6 +72,7 @@ export default function SubmitPage() {
           description: description,
           url: formData.get("url"),
           screenshot_url: screenshotUrl,
+          video_url: formData.get("video_url") || null,
           tags,
           creator_id: profile.id,
           comments_enabled: true,
@@ -184,6 +192,34 @@ export default function SubmitPage() {
                 type="url"
                 placeholder="https://your-app.com"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="video_url">Demo Video (Optional)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Share a Google Drive link to a video demonstrating your
+                      application's functionality.
+                      <br />
+                      <b>
+                        Don't forget to give public access to the video you are
+                        sharing.
+                      </b>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Input
+                id="video_url"
+                name="video_url"
+                type="url"
+                placeholder="https://drive.google.com/file/d/your-video-id/view"
               />
             </div>
 
