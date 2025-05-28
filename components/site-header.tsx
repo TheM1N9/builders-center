@@ -129,9 +129,9 @@ export function SiteHeader() {
               >
                 Login
               </Button>
-              <Button size="sm" onClick={() => router.push("/register")}>
+              {/* <Button size="sm" onClick={() => router.push("/register")}>
                 Register
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>

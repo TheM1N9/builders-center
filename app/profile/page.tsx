@@ -53,6 +53,16 @@ type ProfileApplication = Application & {
   creator_user_id?: string;
 };
 
+type Team = {
+  id: string;
+  name: string;
+  members: {
+    id: string;
+    user_id: string;
+    email: string;
+  }[];
+};
+
 export default function ProfilePage() {
   const { user, profile } = useAuth();
   const [myProfile, setMyProfile] = useState<Profile | null>(null);
@@ -65,9 +75,10 @@ export default function ProfilePage() {
   const [commentedApplications, setCommentedApplications] = useState<
     ProfileApplication[]
   >([]);
-  const [activeTab, setActiveTab] = useState<"my" | "liked" | "commented">(
-    "my"
-  );
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [activeTab, setActiveTab] = useState<
+    "my" | "liked" | "commented" | "teams"
+  >("my");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -190,6 +201,37 @@ export default function ProfilePage() {
       );
 
       setCommentedApplications(uniqueApps);
+
+      // Fetch user's teams
+      const { data: userTeams, error: teamsError } = await supabase
+        .from("profiles")
+        .select(
+          `
+          id,
+          user_id,
+          email,
+          team_id,
+          team_name
+        `
+        )
+        .eq("team_id", profile.team_id);
+
+      if (teamsError) throw teamsError;
+
+      const formattedTeams = [
+        {
+          id: profile.team_id || "",
+          name: userTeams?.[0]?.team_name || "Unnamed Team",
+          members:
+            userTeams?.map((member) => ({
+              id: member.id,
+              user_id: member.user_id,
+              email: member.email,
+            })) || [],
+        },
+      ];
+
+      setTeams(formattedTeams);
     } catch (error) {
       console.error("Error fetching user data:", error);
       toast({
@@ -511,197 +553,246 @@ export default function ProfilePage() {
           >
             Commented ({commentedApplications.length})
           </Button>
+          <Button
+            variant={activeTab === "teams" ? "default" : "outline"}
+            onClick={() => setActiveTab("teams")}
+          >
+            My Team
+          </Button>
         </div>
 
         {/* Applications Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-          {(activeTab === "my"
-            ? myApplications
-            : activeTab === "liked"
-              ? likedApplications
-              : commentedApplications
-          ).map((app) => (
-            <Link
-              href={`/applications/${app.id}`}
-              key={app.id}
-              className="block group"
-            >
-              {activeTab === "my" && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
-                        <Badge
-                          variant={
-                            app.status === "approved" ? "default" : "secondary"
-                          }
-                        >
-                          {app.status}
-                        </Badge>
+        {activeTab !== "teams" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {(activeTab === "my"
+              ? myApplications
+              : activeTab === "liked"
+                ? likedApplications
+                : commentedApplications
+            ).map((app) => (
+              <Link
+                href={`/applications/${app.id}`}
+                key={app.id}
+                className="block group"
+              >
+                {activeTab === "my" && (
+                  <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                    <div className="flex flex-col h-full">
+                      <div className="relative w-full aspect-square max-h-[200px]">
+                        <Image
+                          src={app.screenshot_url}
+                          alt={app.title}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
+                      <div className="p-3 flex flex-col h-[200px]">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                            {app.title}
+                          </p>
                           <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
+                            variant={
+                              app.status === "approved"
+                                ? "default"
+                                : "secondary"
+                            }
                           >
-                            {tag}
+                            {app.status}
                           </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
+                        </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {app.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs px-2 py-0"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {app.tags.length > 3 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{app.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                          {app.description}
+                        </p>
+
+                        <div className="flex justify-between items-center mt-auto">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleStar(app.id, app.isStarred);
+                              }}
+                              className={app.isStarred ? "text-[#ef5a3c]" : ""}
+                            >
+                              <Star
+                                className={`h-4 w-4 mr-1 ${
+                                  app.isStarred ? "fill-[#ef5a3c]" : ""
+                                }`}
+                              />
+                              <span className="text-xs">{app.stars}</span>
+                            </Button>
+                          </div>
                           <Button
-                            variant="ghost"
                             size="sm"
+                            variant="outline"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleStar(app.id, app.isStarred);
+                              window.open(app.url, "_blank");
                             }}
-                            className={app.isStarred ? "text-[#ef5a3c]" : ""}
+                            className="text-xs"
                           >
-                            <Star
-                              className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#ef5a3c]" : ""
-                              }`}
-                            />
-                            <span className="text-xs">{app.stars}</span>
+                            Visit <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(app.url, "_blank");
-                          }}
-                          className="text-xs"
-                        >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              )}
+                  </Card>
+                )}
 
-              {(activeTab === "liked" || activeTab === "commented") && (
-                <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
-                  <div className="flex flex-col h-full">
-                    <div className="relative w-full aspect-square max-h-[200px]">
-                      <Image
-                        src={app.screenshot_url}
-                        alt={app.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-3 flex flex-col h-[200px]">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
-                          {app.title}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/users/${app.creator_user_id}`}
-                            className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            @{app.creator_user_id}
-                          </Link>
+                {(activeTab === "liked" || activeTab === "commented") && (
+                  <Card className="overflow-hidden w-full max-w-[280px] justify-self-center transition-transform hover:scale-[1.02] h-[370px]">
+                    <div className="flex flex-col h-full">
+                      <div className="relative w-full aspect-square max-h-[200px]">
+                        <Image
+                          src={app.screenshot_url}
+                          alt={app.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-3 flex flex-col h-[200px]">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="font-semibold text-base line-clamp-1 group-hover:text-primary">
+                            {app.title}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/users/${app.creator_user_id}`}
+                              className="text-xs text-muted-foreground hover:text-primary whitespace-nowrap"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              @{app.creator_user_id}
+                            </Link>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {app.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="text-xs px-2 py-0"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                        {app.tags.length > 3 && (
-                          <span className="text-xs text-muted-foreground">
-                            +{app.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {app.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs px-2 py-0"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                          {app.tags.length > 3 && (
+                            <span className="text-xs text-muted-foreground">
+                              +{app.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
-                        {app.description}
-                      </p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                          {app.description}
+                        </p>
 
-                      <div className="flex justify-between items-center mt-auto">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="flex justify-between items-center mt-auto">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleStar(app.id, app.isStarred);
+                              }}
+                              className={app.isStarred ? "text-[#ef5a3c]" : ""}
+                            >
+                              <Star
+                                className={`h-4 w-4 mr-1 ${
+                                  app.isStarred ? "fill-[#ef5a3c]" : ""
+                                }`}
+                              />
+                              <span className="text-xs">{app.stars}</span>
+                            </Button>
+                          </div>
                           <Button
-                            variant="ghost"
                             size="sm"
+                            variant="outline"
                             onClick={(e) => {
                               e.preventDefault();
-                              handleStar(app.id, app.isStarred);
+                              window.open(app.url, "_blank");
                             }}
-                            className={app.isStarred ? "text-[#ef5a3c]" : ""}
+                            className="text-xs"
                           >
-                            <Star
-                              className={`h-4 w-4 mr-1 ${
-                                app.isStarred ? "fill-[#ef5a3c]" : ""
-                              }`}
-                            />
-                            <span className="text-xs">{app.stars}</span>
+                            Visit <ExternalLink className="ml-1 h-3 w-3" />
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(app.url, "_blank");
-                          }}
-                          className="text-xs"
-                        >
-                          Visit <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
+                  </Card>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Teams Grid */}
+        {activeTab === "teams" && (
+          <div className="grid grid-cols-1 gap-6">
+            {teams.map((team) => (
+              <Card key={team.id} className="p-6">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-2xl font-semibold">{team.name}</h3>
+                    <Badge variant="secondary" className="text-base px-3 py-1">
+                      {team.members.length} members
+                    </Badge>
                   </div>
-                </Card>
-              )}
-            </Link>
-          ))}
-        </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium">Team Members</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {team.members.map((member) => (
+                        <Link href={`/users/${member.user_id}`} key={member.id}>
+                          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">
+                                @{member.user_id}
+                              </div>
+                              <div className="text-sm text-muted-foreground truncate">
+                                {member.email}
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
         {((activeTab === "my" && myApplications.length === 0) ||
           (activeTab === "liked" && likedApplications.length === 0) ||
-          (activeTab === "commented" &&
-            commentedApplications.length === 0)) && (
+          (activeTab === "commented" && commentedApplications.length === 0) ||
+          (activeTab === "teams" && teams.length === 0)) && (
           <div className="text-center text-muted-foreground py-12">
-            No applications found in this category.
+            No {activeTab === "teams" ? "teams" : "applications"} found in this
+            category.
           </div>
         )}
       </div>
