@@ -19,6 +19,10 @@ export function MainNav() {
       label: "Discover",
     },
     {
+      href: "/leaderboard",
+      label: "Leaderboard",
+    },
+    {
       href: "/submit",
       label: "Submit",
     },

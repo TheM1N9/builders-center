@@ -61,6 +61,13 @@ export function SiteHeader() {
                     Discover
                   </Link>
                   <Link
+                    href="/leaderboard"
+                    className="text-sm"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Leaderboard
+                  </Link>
+                  <Link
                     href="/submit"
                     className="text-sm"
                     onClick={() => setIsOpen(false)}

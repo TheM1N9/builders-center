@@ -6,53 +6,80 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleGoogleLogin = async () => {
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
-    const redirectTo =
-      process.env.NEXT_PUBLIC_REDIRECT_URL ??
-      `${window.location.origin}/profile`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-      },
-    });
-    if (error) {
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      router.push("/profile");
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md p-6 flex flex-col items-center gap-6">
-        <h1 className="text-2xl font-bold text-center">Login</h1>
-        <Button
-          onClick={handleGoogleLogin}
-          className="w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? "Logging in ..." : "Login with Google"}
-        </Button>
-        <p className="text-center mt-4 text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <span
-            className="text-primary cursor-pointer hover:underline"
-            onClick={() => router.push("/register")}
-          >
-            Register
-          </span>
-        </p>
+      <Card className="w-full max-w-md p-6">
+        <div className="flex flex-col items-center gap-6">
+          <h1 className="text-2xl font-bold text-center">Login</h1>
+          <form onSubmit={handleEmailLogin} className="w-full space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
+        </div>
       </Card>
     </div>
   );
