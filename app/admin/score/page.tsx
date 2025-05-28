@@ -29,8 +29,18 @@ export default function ScoreApplications() {
   const router = useRouter();
 
   useEffect(() => {
+    // Check if user is admin before allowing access
+    if (!profile?.role || profile.role !== 'admin') {
+      toast({
+        title: "Access Denied",
+        description: "Admin privileges required",
+        variant: "destructive",
+      });
+      router.push('/');
+      return;
+    }
     fetchApplications();
-  }, []);
+  }, [profile, router]);
 
   const fetchApplications = async () => {
     try {
